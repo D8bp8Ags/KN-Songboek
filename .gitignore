@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Build output (mkdocs, PyInstaller)
+site/
+build/
+dist/
+
+# Editors and systems
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+
+# Private: own words for tools/privacy_check.py
+.privacy-words
+
+# Card and diskette data must never be in git (tests make their own demo cards)
+KN7000MN.*
+KN6000MN.*
+TFLD[0-9][0-9][0-9]/
+PRIVATE/
+SD_SOUND/
+*.SQT
+*.PMT
+*.CMP
+*.MSP
+*.TM
+*.EFC
+*.LSW
+*.SQF
+*.SEQ
+*.ACT
+*.AST
+*.CST
+*.PLM
+*.TKM
+*.img
+*.ima
+*.dmg
+*.iso
+*.zip
+KNSONGBK.JOB
+*.LCK

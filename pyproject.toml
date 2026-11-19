@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kn-songboek"
+version = "0.2.0"
+description = "Read and edit the Technics SX-KN7000 SD-card music database"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+dependencies = []
+
+[project.optional-dependencies]
+gui = ["PySide6-Essentials>=6.5"]
+dev = ["pytest>=7", "ruff", "mypy"]
+docs = ["mkdocs>=1.6", "mkdocs-material>=9.5"]
+
+[project.scripts]
+kn-songboek-cli = "kn_songboek.cli.main:main"
+
+[project.gui-scripts]
+kn-songboek = "kn_songboek.gui.qt_app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+# Real mistakes only: pyflakes, pycodestyle errors/warnings, bugbear. Style rewrites (UP) are not wanted:
+# the code supports Python 3.9.
+select = ["E", "F", "W", "B"]
+ignore = ["E501", "E701", "E702"]     # long lines and compact one-liners are used on purpose (CLI tables)
+
+[tool.ruff.lint.per-file-ignores]
+"tools/make_screenshots.py" = ["E402"]
+
+[tool.mypy]
+# The byte-level code (formats, storage) is type-checked; core and gui are covered by the tests.
+files = ["src/kn_songboek/formats", "src/kn_songboek/storage"]
+ignore_missing_imports = true
+warn_unused_ignores = true

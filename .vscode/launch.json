@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "inputs": [
+    {"id": "kaart", "type": "promptString", "description": "Map met de kopie van de SD-kaart",
+     "default": ""}
+  ],
+  "configurations": [
+    {"name": "GUI (kn-songboek)", "type": "debugpy", "request": "launch",
+     "module": "kn_songboek.gui.qt_app", "args": ["${input:kaart}"], "console": "integratedTerminal"},
+    {"name": "CLI: ls", "type": "debugpy", "request": "launch",
+     "module": "kn_songboek", "args": ["ls", "${input:kaart}"], "console": "integratedTerminal"},
+    {"name": "CLI: check", "type": "debugpy", "request": "launch",
+     "module": "kn_songboek", "args": ["check", "${input:kaart}"], "console": "integratedTerminal"}
+  ]
+}

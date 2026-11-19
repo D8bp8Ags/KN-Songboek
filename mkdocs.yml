@@ -1,0 +1,71 @@
+# Documentation website: `mkdocs serve` (live preview) or `mkdocs build` (into site/, opens from disk).
+# Install: pip install -e ".[docs]"   or   uv run --extra docs mkdocs build
+site_name: KN Songboek
+site_description: SD-kaart van de Technics SX-KN7000 beheren
+docs_dir: docs
+site_dir: site
+use_directory_urls: false          # site/ works when opened straight from disk (index.html)
+strict: true                        # a broken link fails the build
+theme:
+  name: material
+  language: nl
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle: {icon: material/weather-night, name: Donker}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle: {icon: material/weather-sunny, name: Licht}
+plugins:
+  - search:
+      lang: nl
+  - offline                         # search also works from disk, without a web server
+hooks:
+  - tools/mkdocs_hooks.py           # adds ROADMAP.md and CHANGELOG.md from the repository root
+markdown_extensions:
+  - tables
+  - admonition
+  - toc:
+      permalink: true
+nav:
+  - Start: README.md
+  - Handleiding: nl/handleiding.md
+  - Manual (English): en/manual.md
+  - Documentatie: nl/README.md
+  - Tutorial:
+      - Eerste stappen: nl/tutorials/eerste-stappen.md
+  - How-to:
+      - Kaart veilig kopiëren: nl/how-to/kaart-veilig-kopieren.md
+      - Songs beheren: nl/how-to/songs-beheren.md
+      - Kaarten samenvoegen: nl/how-to/kaarten-samenvoegen.md
+      - Back-up en herstel: nl/how-to/back-up-en-herstel.md
+      - Grafische versie: nl/how-to/grafische-versie.md
+      - Kaartimage: nl/how-to/kaartimage.md
+      - Bibliotheek: nl/how-to/bibliotheek.md
+  - Referentie:
+      - SD-kaart: nl/reference/sd-kaart.md
+      - KN7000MN.INF: nl/reference/kn7000mn-inf.md
+      - Songbestanden: nl/reference/songbestanden.md
+      - Opdrachtregel: nl/reference/cli.md
+      - Python-API: nl/reference/api.md
+  - Uitleg:
+      - Architectuur: nl/explanation/architectuur.md
+      - Reverse engineering: nl/explanation/reverse-engineering.md
+      - Methodiek: nl/explanation/methodiek.md
+  - Beslissingen:
+      - Overzicht: nl/decisions/README.md
+      - ADR-0001 Lagen: nl/decisions/0001-src-layout-en-lagen.md
+      - ADR-0002 Ports and adapters: nl/decisions/0002-ports-and-adapters.md
+      - ADR-0003 Commando's: nl/decisions/0003-commandos-met-uitgestelde-uitvoering.md
+      - ADR-0004 Licentie en bronnen: nl/decisions/0004-licentie-en-bronnen.md
+      - ADR-0005 PySide6 en MVP: nl/decisions/0005-pyside6-met-mvp.md
+      - ADR-0006 Documentatie: nl/decisions/0006-diataxis-arc42-adr.md
+      - ADR-0007 Bibliotheek: nl/decisions/0007-bibliotheek-zonder-index.md
+      - ADR-0008 Eenvoudige werkwijze: nl/decisions/0008-taakgerichte-werkwijze.md
+  - Planning: ROADMAP.md
+  - Wijzigingen: CHANGELOG.md
