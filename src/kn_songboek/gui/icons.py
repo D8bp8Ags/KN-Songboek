@@ -292,12 +292,24 @@ def check(p: P) -> None:
     p.restore()
 
 
+def chevron(p: P) -> None:
+    """"Go on here": the arrow at the right of a start-screen task."""
+    pen = p.pen()
+    pen.setWidthF(2.6)
+    p.setPen(pen)
+    path = QPainterPath()
+    path.moveTo(9, 5)
+    path.lineTo(16, 12)
+    path.lineTo(9, 19)
+    p.drawPath(path)
+
+
 DRAW: Dict[str, Callable[[P], None]] = {
     "card": card, "card_new": card_new, "library": library, "put_on_card": put_on_card, "back": back,
     "undo": undo, "redo": redo, "move": move, "copy": copy, "rename": rename, "remove": remove, "info": info,
     "folder_new": folder_new, "put_in_folder": put_in_folder, "search": search, "filter": filter, "tip": tip,
     "star": star, "history": history, "printer": printer, "table": table, "two_cards": two_cards,
-    "restore": restore, "check": check,
+    "restore": restore, "check": check, "chevron": chevron,
 }
 
 _bg: Optional[QColor] = None

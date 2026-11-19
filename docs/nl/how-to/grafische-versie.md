@@ -29,7 +29,7 @@ via **Meer…** of de menubalk.
 | Op kaart zetten | de knop in de gele balk, of Ctrl/Cmd+S. Eerst controle (schrijfbeveiliging, ruimte), dan een back-up, dan schrijven; daarna "Klaar" (op de Mac wordt de kaart ook uitgeworpen). Bij een nieuwe kaart kies je eerst welke SD-kaart; staan daar al songs op, dan waarschuwt het programma |
 | Kaart bewaren | taak 3 op het startscherm: de kaart gaat als map met de naam van het etiket in de bibliotheek; zit hij er al in, dan vraagt het programma of de kopie op de computer vervangen moet worden door wat nu op de kaart staat (de SD-kaart zelf verandert niet) |
 | Back-up terugzetten | Extra → Back-up terugzetten… |
-| Songlijst | Bestand → Songlijst afdrukken (PDF)… of Songlijst voor Excel (CSV)… |
+| Songlijst | Bestand → Songlijst opslaan (PDF of CSV)… |
 | Controleren / herstellen | Extra → Kaart doet raar? (Ctrl/Cmd+K): controleert en biedt herstellen aan |
 | Favorieten | Weergave → Favorieten en songlijsten (Ctrl/Cmd+L). Kies een bank, sleep songs op een knop (1-9); Del wist een knop |
 | Songlijsten | zelfde paneel, tab Songlijsten: sleep songs erin, sleep binnen de lijst om te ordenen, Del haalt eruit |

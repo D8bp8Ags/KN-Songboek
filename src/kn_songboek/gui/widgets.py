@@ -11,6 +11,8 @@ from PySide6.QtCore import (
     QItemSelectionModel,
     QMimeData,
     QObject,
+    QRect,
+    QRectF,
     QRegularExpression,
     QSize,
     Qt,
@@ -21,6 +23,9 @@ from PySide6.QtGui import (
     QBrush,
     QColor,
     QDrag,
+    QPainter,
+    QPainterPath,
+    QPixmap,
     QRegularExpressionValidator,
 )
 from PySide6.QtWidgets import (
@@ -1390,18 +1395,27 @@ class LibraryPanel(QFrame):
 
 class TaskButton(QPushButton):
     """A big start-screen button: the task in bold, the explanation below it, wrapped to the width
-    (a plain button cannot wrap, which made the window wider than a laptop screen with big letters)."""
+    (a plain button cannot wrap, which made the window wider than a laptop screen with big letters).
+    Each task has a colour of its own (number 1-3: blue, green, orange): a stripe on the left, the
+    picture in a soft circle of that colour and an arrow on the right, so the three are told apart at a glance."""
 
-    def __init__(self, parent: QWidget):
+    PICTURE = 64                                        # the circle; the picture inside it is about half
+
+    def __init__(self, parent: QWidget, number: int = 1):
         super().__init__(parent)
         self._text = ""
+        self._picture = "card"
+        self.number = number
+        self.setObjectName("task")
+        self.setProperty("task", str(number))
+        self.setCursor(Qt.PointingHandCursor)
         self.setStyleSheet(style.sheet("QPushButton { min-height: 100px; }"))      # the app style sheet would win otherwise
         outer = QHBoxLayout(self)
-        outer.setContentsMargins(style.px(20), style.px(12), style.px(20), style.px(12))
-        outer.setSpacing(style.px(18))
+        outer.setContentsMargins(style.px(30), style.px(14), style.px(22), style.px(14))
+        outer.setSpacing(style.px(20))
         self.picture = QLabel(self)                     # the task as a picture, so it is found again at a glance
         self.picture.setAttribute(Qt.WA_TransparentForMouseEvents)
-        self.picture.setFixedSize(style.px(44), style.px(44))
+        self.picture.setFixedSize(style.px(self.PICTURE), style.px(self.PICTURE))
         outer.addWidget(self.picture, 0, Qt.AlignVCenter)
         lay = QVBoxLayout()
         lay.setSpacing(4)
@@ -1413,9 +1427,13 @@ class TaskButton(QPushButton):
         self.head.setFont(f)
         self.info = QLabel(self)
         self.info.setWordWrap(True)
+        self.arrow = QLabel(self)                       # "go on here", in the task's colour
+        self.arrow.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.arrow.setFixedSize(style.px(28), style.px(28))
         for lab in (self.head, self.info):
             lab.setAttribute(Qt.WA_TransparentForMouseEvents)
             lay.addWidget(lab)
+        outer.addWidget(self.arrow, 0, Qt.AlignVCenter)
 
     def setText(self, text: str) -> None:              # "title\nexplanation"
         self._text = text
@@ -1427,15 +1445,46 @@ class TaskButton(QPushButton):
         return self._text
 
     def set_picture(self, name: str) -> None:
-        self.picture.setPixmap(icons.pixmap(name, 44))
+        """The picture in its coloured circle, and the arrow; again after a switch between light and dark."""
+        self._picture = name
+        colour, soft = style.colour("task%d" % self.number), style.colour("task%d_bg" % self.number)
+        size, scale = style.px(self.PICTURE), 2
+        pm = QPixmap(size * scale, size * scale)
+        pm.fill(Qt.transparent)
+        p = QPainter(pm)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(Qt.NoPen)
+        p.setBrush(soft)
+        p.drawEllipse(0, 0, size * scale, size * scale)
+        inner = icons.pixmap(name, self.PICTURE * 34 // 64, colour, soft, scale)     # drawn at scale too
+        off = (size * scale - inner.width()) // 2
+        p.drawPixmap(QRect(off, off, inner.width(), inner.height()), inner)
+        p.end()
+        pm.setDevicePixelRatio(scale)
+        self.picture.setPixmap(pm)
+        self.arrow.setPixmap(icons.pixmap("chevron", 28, colour))
+
+    STRIPE = 10                                         # the coloured stripe on the left
+
+    def paintEvent(self, e):
+        """The button (style sheet), then the stripe in the task's colour along its rounded left side."""
+        super().paintEvent(e)
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        path = QPainterPath()
+        path.addRoundedRect(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5), style.px(14), style.px(14))
+        p.setClipRect(QRect(0, 0, style.px(self.STRIPE), self.height()))
+        p.fillPath(path, style.colour("task%d" % self.number))
+        p.end()
 
     def hasHeightForWidth(self) -> bool:                # the explanation wraps: taller when narrower
         return True
 
     def heightForWidth(self, w: int) -> int:
-        text_w = w - 40 - 44 - 18                       # margins, picture, gap
-        need = 24 + self.head.sizeHint().height() + 6 + self.info.heightForWidth(max(text_w, 100)) + 12
-        return max(100, need)
+        m = self.layout().contentsMargins()
+        text_w = w - m.left() - m.right() - self.picture.width() - self.arrow.width() - 2 * self.layout().spacing()
+        need = m.top() + m.bottom() + 8 + self.head.sizeHint().height() + 4 + self.info.heightForWidth(max(text_w, 100))
+        return max(style.px(100), need, self.picture.height() + m.top() + m.bottom())
 
     def resizeEvent(self, e):
         super().resizeEvent(e)

@@ -58,6 +58,9 @@ Start KN Songboek. The program asks **What do you want to do?** You see three bi
 - **Keep a card or diskette in the library**: put a copy of a card or a music diskette on the computer. Then
   you can always find those songs again. See [chapter 6](#6-keeping-a-card-or-diskette-in-the-library).
 
+Each task has a colour of its own: blue, green and orange. Under the buttons you see how many cards and diskettes
+are already in your library.
+
 At the top left there is always the **Start** button. It takes you back to this screen. At the top right there
 is a **?**. Click it when you are not sure how something works: you then see the part of this manual about that
 screen.
@@ -130,8 +133,8 @@ click.
 Below the songs there are four buttons:
 
 - **Move to…**: the song goes to another folder. You choose the folder from a table that shows, per folder,
-  the number, the name, how many songs are in it and how many places are still free. Full folders are not
-  in it. At the bottom is **+ New folder…**.
+  the number, the name, how many songs are in it and how many places are still free. A full folder is greyed out
+  ("full") and cannot be chosen. At the bottom is **+ New folder…**.
 - **Copy to…**: the song is added to another folder. The original stays where it is.
 - **Rename**: give the song another name.
 - **Remove**: take the song off the card.
@@ -450,19 +453,20 @@ first and then puts it right. If everything is fine, you see **Done** straight a
   arranging. Then you can put songs from the library on that card.
 - **A second card alongside**: with **File › Second card alongside…** you see a second card, from which you drag
   songs to the open card. You need two card readers for that.
-- **Print song list**: **More… › Print song list (PDF)…** makes an overview of all songs on the card, to print.
+- **Save song list**: **More… › Save song list (PDF or CSV)…** makes an overview of all songs on the card, to print or open in Excel.
   You choose what is on it: folder by folder or all songs by name (A to Z, handy to look a song up quickly), your
   own title, the date and page numbers at the bottom, large print for the music stand, and whether empty folders
   are included, and landscape paper. The program remembers your choice for next time. The columns get the room the paper
-  has. With many columns the letters get smaller, and only if it still does not fit are long texts shortened
-  with "…". With **Songs in diskette sets each on their own line**, every song in such a set gets its own line,
+  has. With many columns the letters get smaller (down to 8 point), and the app turns the paper on its side by
+  itself when that keeps the letters bigger; this also goes for large print. Only if it still does not fit
+  are long texts shortened with "…". A column never runs off the edge of the paper. With **Landscape paper**
+  the paper is always on its side. With **Songs in diskette sets each on their own line**, every song in such a set gets its own line,
   with the set's name next to it. With a library, you choose
   at the top whether the list is about the open card or the whole library. By name (A to Z) then shows, for each
   song, on which card, in which folder and at which number it is.
   At the top of the window you choose **Save as**: a PDF to print, or a CSV for Excel or Numbers. The CSV is
   exactly the same list, without layout: Folder and Folder name are at the front of every line instead of
-  being a heading, and empty columns are left out. **More… › Song list for Excel (CSV)…** opens the same
-  window, with CSV already chosen.
+  being a heading, and empty columns are left out. The app remembers what you chose last time.
 - **A copy of the library**: **More… › Copy the library…** puts your whole library on a USB stick or an external
   drive. Choose the stick and click **Make the copy here**. Every file is checked. If you do it again later, the
   program only copies what is new or changed.

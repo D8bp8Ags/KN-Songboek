@@ -5,6 +5,7 @@ versies volgens [SemVer](https://semver.org/lang/nl/).
 
 ## [Unreleased]
 ### Added
+- **Vrolijker startscherm**: bovenaan een blauwe band met "Wat wil je doen?" en de naam van de app. Elke taak heeft een eigen kleur (blauw, groen, oranje): een streep links, het plaatje in een rondje van die kleur en een pijltje rechts. Onder de knoppen staat wat er in je bibliotheek zit ("In je bibliotheek: 12 kaarten en 8 diskettes, samen 1.240 songs"; het aantal songs zodra de bibliotheek open is geweest). Ook in donkere modus.
 - **Privacycontrole strenger**: namen van AI-hulpmiddelen en de oude naam van de app (ook in commitberichten, auteurs en e-mailadressen), regels met een medeauteur in een commit, en verborgen informatie in PNG-plaatjes (tekst- of herkomstgegevens) worden nu ook gevonden. `tools/strip_png.py` haalt die verborgen informatie uit plaatjes; het plaatje zelf blijft gelijk.
 - **Stapvensters**: bovenin ronde stapjes met een nummer (blauw = waar je bent, groen vinkje = klaar) op een lichte balk, daaronder "Stap 2 van 3". Terwijl het programma werkt staat er een lijstje van wat het doet (genoeg ruimte, back-up, op de kaart zetten, teruglezen en controleren) dat één voor één een groen vinkje krijgt, en onder de balk "Haal de kaart er nog niet uit." (of de diskette, of de USB-stick). Annuleren staat links, de volgende stap rechts. Bij Klaar is stap 3 de blauwe, de stappen ervoor hebben een vinkje.
 - Ook in een stapvenster: **Kaart doet raar?** (Nakijken → Herstellen → Klaar, met Klaar na het herstellen), **Back-up terugzetten** (Zeker weten? → Terugzetten → Klaar), **Back-up in de bibliotheek zetten** (Naam → Bewaren → Klaar) en **Nu een back-up maken**.
@@ -21,6 +22,8 @@ versies volgens [SemVer](https://semver.org/lang/nl/).
 - **Songlijst: één venster voor PDF en CSV.** Bovenaan kies je "Opslaan als" PDF of CSV; achter allebei zit dezelfde code die de lijst maakt, alleen het wegschrijven verschilt. De CSV is nu dezelfde lijst als de afdruk: zelfde volgorde, "Uit set" na de naam, lege kolommen weg, en Map/Mapnaam vooraan in elke regel (in de PDF zijn dat koppen). "Lege mappen weglaten" werkt nu ook voor de CSV. De opmaakkeuzes (titel, datum, letters, papier) zijn bij CSV grijs.
 - **Verplaatsen naar… / Kopiëren naar…**: de mappen staan in een tabel met kolommen Map, Naam, Songs en Nog vrij, netjes onder elkaar. Een map zonder naam staat schuin.
 
+- **Eén knop voor de songlijst**: "Songlijst opslaan (PDF of CSV)…" vervangt de twee knoppen (en menu-items) voor PDF en CSV; het venster onthoudt welke je de vorige keer koos.
+
 ### Removed
 - Verwijzingen naar andere programma's uit code en documentatie; `.coverage` uit git (bevatte eigen paden); twee oude schermafbeeldingen (vervangen door de demo-plaatjes van de handleiding); het pad van een eigen kaartkopie in `.vscode/launch.json` en in de uitleg van de echte-kaarttest.
 - **Vijf filters in de bibliotheek** (onder Filter): Nog niet op mijn kaart (herkent een song aan de inhoud, ook met een andere naam), Maat, Maar op één kaart / Op meer dan één kaart, Alleen van SD-kaarten / Alleen van diskettes, Alleen beschadigd (⚠). De knop laat zien hoeveel filters er aan staan, bijvoorbeeld "Filter (2)".
@@ -33,6 +36,9 @@ versies volgens [SemVer](https://semver.org/lang/nl/).
 - **README**: één bestand, eerst Engels en dan Nederlands, met een pakkende opening, wat je ermee kunt, beginnen in 3 stappen, veiligheid en een oproep voor testers.
 
 ### Fixed
+- **Songlijst met grote letters**: kolommen werden afgekapt ("8 Bea…") en de laatste kolom liep over de rand van het papier. Nu worden de letters eerst kleiner (ook met grote letters, tot 8 punt) en draait het papier zelf een kwartslag als de lijst te breed is; pas daarna wordt iets ingekort. Past een tabel toch niet (een ander lettertype dan gemeten), dan wordt hij als geheel kleiner, zoals een spreadsheet afdrukt, in plaats van over de rand te lopen.
+- **Kopiëren naar… / Verplaatsen naar…**: volle mappen vielen stil weg uit de lijst, zodat het leek alsof mappen ontbraken. Nu staan ze er grijs in met "vol", met uitleg onder de lijst, en "+ Nieuwe map…" toont welke lege map het wordt.
+- **Songlijst als PDF**: werd de lijst te breed, dan koos de app de grootste letters en kapte bijna elke kolom af ("8 Beat…", "A: Rau…"). Nu worden eerst de letters kleiner (tot 8 punt); pas als het dan nog niet past, wordt alleen de breedste kolom zo weinig mogelijk ingekort.
 - **Privacycontrole**: eigen woorden (`.privacy-words`) worden nu ook gezocht in de controle zelf en in haar test, die voor de patronen worden overgeslagen. Daar bleef een eigen schijfnaam onopgemerkt. Een eigen woord telt alleen als heel woord ("Data" niet in "Database").
 - **Lettergrootte** zie je meteen: het venster wordt opnieuw opgebouwd, zonder vraag en zonder herstart. De open kaart, de bibliotheek en wijzigingen die nog niet op de kaart staan blijven staan.
 - Het menu **Taal** heeft een vinkje bij de taal die aan staat, net als Lettergrootte.

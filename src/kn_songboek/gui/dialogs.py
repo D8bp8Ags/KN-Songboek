@@ -475,9 +475,11 @@ class ExportDialog(QDialog):
     looks (title, date, page numbers, large print, a new page per folder). The choice of last time is
     ticked; the title is proposed afresh. kind: the format chosen at the start ("pdf" or "csv")."""
 
-    def __init__(self, win: "MainWindow", kind: str):
+    def __init__(self, win: "MainWindow", kind: Optional[str] = None):
         super().__init__(win)
         p, t = win.presenter, win.presenter.t
+        if kind is None:                                # one button: the format chosen last time
+            kind = "csv" if str(win.settings.value("export/format", "pdf")) == "csv" else "pdf"
         self.kind = kind
         st = win.settings
         self.setWindowTitle(t("exp_title"))
@@ -697,6 +699,7 @@ class ExportDialog(QDialog):
         for key in ("date", "pages", "big", "landscape", "skip_empty"):
             settings.setValue("export/" + key, c[key])
         settings.setValue("export/page", self.page.isChecked())
+        settings.setValue("export/format", c["format"])
 
     def win_fields(self):
         return self.parent().presenter.EXPORT_FIELDS
@@ -706,15 +709,15 @@ class MoreDialog(QDialog):
     """"Meer…": everything that is not needed every day, as big tiles in a few groups instead of a long
     menu. A tile closes the window and does its job."""
 
-    TILE_ICONS = {"lists": "star", "duplicates": "copy", "history": "history", "export_pdf": "printer",
-                  "export_csv": "table", "open_other": "two_cards", "library": "library", "backups": "restore",
+    TILE_ICONS = {"lists": "star", "duplicates": "copy", "history": "history", "export": "printer",
+                  "open_other": "two_cards", "library": "library", "backups": "restore",
                   "check_card": "check", "copy_library": "library"}
     # The menu bar holds every command (macOS convention); "Meer…" only the ones a player uses now and then,
     # with the same names, so a tile and its menu item are recognisably the same thing. Opening a card
     # by hand, choosing the library, a second card alongside (needs two card readers) and the
     # language stay in the menu bar only.
     GROUPS = [("more_play", ["lists", "history", "duplicates"]),
-              ("more_card", ["export_pdf", "export_csv", "library"]),
+              ("more_card", ["export", "library"]),
               ("more_help", ["backups", "copy_library", "check_card"])]
 
     def __init__(self, win: "MainWindow"):
@@ -788,9 +791,14 @@ class FolderPickerDialog(QDialog):
         self.list.setUniformRowHeights(True)
         self.list.setHeaderLabels([t("col.folder"), t("col.name"), t("pick_col_songs"), t("pick_col_free")])
         noname = t("noname")
-        for n, cells in choices:
+        first = None
+        for n, cells, can in choices:
             it = QTreeWidgetItem(cells)
             it.setData(0, Qt.UserRole, n)
+            if not can:                                 # full: shown, but greyed out
+                it.setFlags(it.flags() & ~(Qt.ItemIsEnabled | Qt.ItemIsSelectable))
+            elif first is None:
+                first = it
             for c in (0, 2, 3):
                 it.setTextAlignment(c, Qt.AlignRight | Qt.AlignVCenter)
             if n == 0 or cells[1] == noname:            # "+ Nieuwe map…" and "(geen naam)": not a real name
@@ -804,9 +812,13 @@ class FolderPickerDialog(QDialog):
         hd.setSectionResizeMode(1, QHeaderView.Stretch)
         for c in (0, 2, 3):
             self.list.headerItem().setTextAlignment(c, Qt.AlignRight | Qt.AlignVCenter)
-        self.list.setCurrentItem(self.list.topLevelItem(0))
+        if first is not None:
+            self.list.setCurrentItem(first)
         self.list.itemDoubleClicked.connect(lambda *_: self.accept())
         lay.addWidget(self.list, 1)
+        note = QLabel(t("pick_note"), self)
+        note.setWordWrap(True)
+        lay.addWidget(note)
         bb = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, self)
         bb.button(QDialogButtonBox.Cancel).setText(t("btn_cancel"))
         bb.accepted.connect(self.accept)
@@ -816,7 +828,9 @@ class FolderPickerDialog(QDialog):
 
     def folder(self) -> Optional[int]:
         it = self.list.currentItem()
-        return None if it is None else it.data(0, Qt.UserRole)
+        if it is None or not (it.flags() & Qt.ItemIsEnabled):
+            return None
+        return it.data(0, Qt.UserRole)
 
 
 class BackupsDialog(QDialog):

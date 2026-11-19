@@ -1031,6 +1031,47 @@ class MainPresenter(SongDetails):
             parts.append(self.t("on_card", card=label, folders=", ".join(str(f) for f in folders)))
         return "; ".join(parts)
 
+    def library_counts(self, root: str = "") -> Optional[Tuple[int, int, Optional[int]]]:
+        """(cards, diskettes, songs) in the library, for the line on the start screen. The open library
+        counts everything; one that is not opened yet (root: the folder chosen before) is only looked
+        through for its cards and diskettes (songs None), so the start screen never waits for it.
+        None when there is no library."""
+        from ..core.floppy import ORIGINALS
+
+        def floppies(paths) -> int:                     # a kept diskette has its own files beside it
+            return sum(1 for path in paths if os.path.isdir(os.path.join(path, ORIGINALS)))
+        lib = self.library
+        if lib is not None:                             # by path: never reads from the cards themselves
+            n = floppies(c.path for c in lib.cards)
+            return len(lib.cards) - n, n, len(lib.songs)
+        if not root or not os.path.isdir(root):
+            return None
+        found = lb.find_cards(root)
+        n = floppies(path for _label, path in found)
+        return len(found) - n, n, None
+
+    def library_summary(self, root: str = "") -> str:
+        """"In je bibliotheek: 12 kaarten en 8 diskettes, samen 1.240 songs" (rich text, numbers in bold);
+        "" without a library."""
+        counts = self.library_counts(root)
+        if counts is None:
+            return ""
+        n_cards, n_floppies, n_songs = counts
+        if not n_cards and not n_floppies:
+            return escape(self.t("start_library_empty"))
+
+        def num(n: int) -> str:
+            text = "{:,}".format(n).replace(",", "." if self.lang != "en" else ",")
+            return "<b>%s</b>" % text
+
+        def part(n: int, key: str) -> str:
+            return self.t(key + ("_one" if n == 1 else ""), n=num(n))
+        parts = [part(n, k) for n, k in ((n_cards, "start_n_cards"), (n_floppies, "start_n_floppies")) if n]
+        what = self.t("start_and").join(parts)
+        if n_songs is not None:
+            what = self.t("start_together", what=what, songs=part(n_songs, "start_n_songs"))
+        return self.t("start_library", what=what)
+
     def show_library(self) -> None:
         cards = [c.label for c in self.library.cards] if self.library else []
         self.view.show_library(self.library_title(), cards, self.library_rows())
@@ -1436,18 +1477,24 @@ class MainPresenter(SongDetails):
             return False
         return True
 
-    def folder_choices(self, exclude: int = 0) -> List[Tuple[int, List[str]]]:
+    def folder_choices(self, exclude: int = 0) -> List[Tuple[int, List[str], bool]]:
         """Folders to offer in "Verplaatsen naar…" / "Kopiëren naar…": the ones in use (name or songs),
-        as table cells (number, name, songs, free places). A full folder is left out.
-        (0, ["", "+ Nieuwe map…", "", ""]) at the end makes a new one."""
+        as table cells (number, name, songs, free places) and whether it can be chosen. A full folder
+        is shown greyed out ("vol"), so it is clear why it cannot be chosen. At the end
+        (0, [first empty folder, "+ Nieuwe map…", "", ""], True) makes a new one, if there is room."""
         s = self.session
-        out: List[Tuple[int, List[str]]] = []
+        out: List[Tuple[int, List[str], bool]] = []
         for fi, f in enumerate(s.db.folders):
             n = sum(1 for x in f.songs if x.used)
-            if fi + 1 == exclude or not (f.name or n) or n >= len(f.songs):
+            if fi + 1 == exclude or not (f.name or n):
                 continue
-            out.append((fi + 1, ["%02d" % (fi + 1), f.name or self.t("noname"), str(n), str(len(f.songs) - n)]))
-        out.append((0, ["", self.t("pick_new_folder"), "", ""]))
+            free = len(f.songs) - n
+            out.append((fi + 1, ["%02d" % (fi + 1), f.name or self.t("noname"), str(n),
+                                 str(free) if free else self.t("pick_full")], free > 0))
+        unused = next((fi + 1 for fi, f in enumerate(s.db.folders)
+                       if not f.name and not any(x.used for x in f.songs)), None)
+        if unused is not None:
+            out.append((0, ["%02d" % unused, self.t("pick_new_folder"), "", ""], True))
         return out
 
     def new_folder(self, name: str) -> Optional[int]:
@@ -2221,32 +2268,32 @@ class MainPresenter(SongDetails):
 
     def _tables(self, parts: List[str], sections, cols: List[str], labels, fit) -> str:
         """The list's tables: per section (heading html, rows) a table with the columns cols, the same
-        columns in every table. A column with nothing in it anywhere is left out. fit: the page sizes
-        to try, (letter size, characters on a line), largest first; the first one where every column
-        fits on one line is used (self.list_font says which), else long texts are cut off with "…",
-        widest column first, just as much as needed. Without fit, long texts may wrap."""
+        columns in every table. A column with nothing in it anywhere is left out.
+        fit: the pages to try,
+        (letter size, characters on a line[, page]), best first; the first one where every column fits on
+        one line is used (self.list_font and self.list_page say which), else, on the last one, long texts
+        are cut off with "…", widest column first, just as much as needed. Without fit, long texts may wrap."""
         every = [r for _h, rs in sections for r in rs]
         cols = self._list_cols(cols, every)
-        self.list_font = None
+        self.list_font = self.list_page = None
         heads, crop = labels(cols), {}
         if fit:
             plan = None
-            for pt, chars in fit:
+            for pt, chars, *page in fit:                # smaller letters (or wider paper) first: the best that fits uncut
                 for short in (False, True):
                     heads = labels(cols, short)
-                    crop = self._fit(every, cols, heads, chars)
-                    if crop == {}:                      # everything fits as it is
-                        plan = (pt, heads, crop)
+                    if self._fit(every, cols, heads, chars) == {}:
+                        plan = (pt, page, heads, {})
                         break
-                    if crop is not None and plan is None:
-                        plan = (pt, heads, crop)        # the biggest letters that fit with cutting
-                if plan is not None and plan[2] == {}:
+                if plan is not None:
                     break
-            if plan is None:                            # nothing fits even cut short: smallest, cut most
-                pt, chars = fit[-1]
+            if plan is None:                            # not even on the last: cut there, as little as needed
+                pt, chars, *page = fit[-1]
                 heads = labels(cols, True)
-                plan = (pt, heads, self._fit(every, cols, heads, chars, force=True) or {})
-            self.list_font, heads, crop = plan
+                crop = self._fit(every, cols, heads, chars)
+                plan = (pt, page, heads, crop if crop is not None else self._fit(every, cols, heads, chars, force=True) or {})
+            self.list_font, page, heads, crop = plan
+            self.list_page = page[0] if page else None
         out = list(parts)
         for head, rows in sections:
             out.append(head)

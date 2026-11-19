@@ -267,6 +267,18 @@ class PresenterTests(unittest.TestCase):
         html = self.p.song_list_html(["song", "name"], fit=fit)
         self.assertEqual(self.p.list_font, 11.0)
         self.assertNotIn("…", html)
+        # too wide for the big letters: smaller letters first, cut only when even the smallest is too narrow
+        sec = [("", [{"song": "01", "name": "A", "rhythm": "8 Beat Rock", "banks": "A: JAZZ, B: 60 & 70 Beats"}])]
+        cols4 = ["song", "name", "rhythm", "banks"]
+        self.p._tables([], sec, cols4, self.p.export_labels, [(11.0, 30), (8.0, 60)])
+        self.assertEqual(self.p.list_font, 8.0)
+        html = self.p._tables([], sec, cols4, self.p.export_labels, [(11.0, 30), (8.0, 45)])
+        self.assertEqual(self.p.list_font, 8.0)
+        self.assertIn("8 Beat Rock<", html)                 # the narrow one stays whole, the widest gives way
+        self.assertIn("…", html)
+        html = self.p._tables([], sec, cols4, self.p.export_labels, [(11.0, 30, False), (11.0, 60, True), (8.0, 45, False)])
+        self.assertEqual((self.p.list_font, self.p.list_page), (11.0, True))   # lying paper before smaller letters
+        self.assertNotIn("…", html)
         self.assertTrue(self.p.list_title().startswith("Songlijst "))
         self.p.volume_roots = lambda: [os.path.dirname(os.path.abspath("card"))]
         self.p.card_path = os.path.abspath("card")
@@ -307,6 +319,14 @@ class PresenterTests(unittest.TestCase):
         self.assertEqual(self.p.move_songs([(3, 1)], 3, copy=True), 0)
         self.assertTrue(self.view.errors and "is vol" in self.view.errors[-1])
 
+
+    def test_folder_choices_show_full_folders_greyed(self):
+        for _ in range(18):                                  # folder 1 (A, B) full: 20 songs
+            self.p.move_songs([(1, 1)], 1, copy=True)
+        rows = {n: (cells, ok) for n, cells, ok in self.p.folder_choices()}
+        self.assertEqual(rows[1], (["01", "(geen naam)", "20", "vol"], False))   # shown, not choosable
+        self.assertTrue(rows[3][1])
+        self.assertEqual(rows[0][0][:2], ["02", "+ Nieuwe map…"])                # first empty folder
 
 class ListsAndSecondCardTests(unittest.TestCase):
     names = PresenterTests.names
@@ -404,7 +424,7 @@ class QtSmokeTest(unittest.TestCase):
             w.songs.selectRow(0)
             self.assertEqual(w.selected_slots(), [(2, 1)])
             self.assertFalse(w.action_bar.isHidden())               # buttons instead of dragging
-            self.assertEqual([n for n, _ in w.presenter.folder_choices(2)], [0])   # no other folder in use: only "new"
+            self.assertEqual([n for n, _c, _ok in w.presenter.folder_choices(2)], [0])   # no other folder in use: only "new"
             pick = FolderPickerDialog(w, "x", w.presenter.folder_choices())         # a table: Map, Naam, Songs, Nog vrij
             self.assertEqual([pick.list.topLevelItem(0).text(c) for c in range(4)], ["02", "(geen naam)", "1", "19"])
             self.assertEqual(pick.folder(), 2)
@@ -413,6 +433,14 @@ class QtSmokeTest(unittest.TestCase):
             self.assertGreater(os.path.getsize(pdf), 500)
             export_pdf(w.presenter.song_list_html(), pdf, date="18 november 2026", pages="Pagina {n} van {total}",
                        big=True, pt=8.0)
+            self.assertGreater(os.path.getsize(pdf), 500)
+            from kn_songboek.gui.qt_app import list_fit
+            fit = list_fit(big=True)                            # big letters: standing, then lying, per size, down to 8
+            self.assertEqual([(pt, lying) for pt, _r, lying in fit[:3]], [(15.0, False), (15.0, True), (13.0, False)])
+            self.assertEqual(fit[-1][0], 8.0)
+            self.assertTrue(all(lying for _p, _r, lying in list_fit(landscape=True)))
+            wide = "<table><tr><td style=\"white-space: nowrap\">%s</td></tr></table>" % ("W" * 400)
+            export_pdf(wide, pdf, big=True)                     # far too wide: made smaller, no error
             self.assertGreater(os.path.getsize(pdf), 500)
             # dark mode: the app's text is white, the paper's text must stay black
             from PySide6.QtGui import QColor, QImage, QPalette, QPainter, QTextDocument
@@ -691,7 +719,7 @@ class QtSmokeTest(unittest.TestCase):
             while w.presenter.fill_library_details():
                 pass
             from kn_songboek.gui.qt_app import ExportDialog
-            self.assertTrue(w.acts["export_pdf"].isEnabled())           # no card open: the library can be listed
+            self.assertTrue(w.acts["export"].isEnabled())           # no card open: the library can be listed
             dlg = ExportDialog(w, "pdf")
             self.assertTrue(dlg.from_lib.isChecked() and dlg.library_chosen())
             self.assertFalse(dlg.boxes["rhythm"].isEnabled())           # the library cannot read the rhythm
@@ -817,6 +845,19 @@ class LibraryPresenterTests(unittest.TestCase):
         self.p.session.storage.free_bytes = lambda: 10
         self.assertEqual(self.p.import_from_library([2], 5), 0)
         self.assertIn("ruimte", self.view.errors[-1])
+
+    def test_start_screen_line_says_what_is_in_the_library(self):
+        self.assertEqual(self.p.library_summary(""), "")                     # no library chosen: no line
+        empty = os.path.join(self.fixture.tmp.name, "leeg")
+        os.makedirs(empty)
+        self.assertEqual(self.p.library_summary(empty), "Je bibliotheek is nog leeg.")
+        os.makedirs(os.path.join(self.root, "Kaart 01", "DISKETTE"))         # kept from a diskette
+        # not opened yet: only looked through (the damaged image counts too), no songs, never waiting
+        self.assertEqual(self.p.library_summary(self.root), "In je bibliotheek: <b>3</b> kaarten en <b>1</b> diskette")
+        self.assertTrue(self.p.open_library(self.root))
+        self.assertEqual(self.p.library_summary(), "In je bibliotheek: <b>2</b> kaarten en <b>1</b> diskette, samen <b>3</b> songs")
+        self.p.lang = "en"
+        self.assertEqual(self.p.library_summary(), "In your library: <b>2</b> cards and <b>1</b> diskette, <b>3</b> songs in all")
 
     def test_export_says_which_card_the_list_is_made_of(self):
         self.assertTrue(self.p.open_library(self.root))

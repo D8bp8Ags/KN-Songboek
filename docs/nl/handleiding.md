@@ -57,6 +57,9 @@ Start KN Songboek. Het programma vraagt **Wat wil je doen?** Je ziet drie grote 
 - **Kaart of diskette bewaren in de bibliotheek**: een kopie van een kaart of een muziekdiskette op de computer
   zetten. Dan vind je die songs altijd terug. Zie [hoofdstuk 6](#6-een-kaart-of-diskette-bewaren-in-de-bibliotheek).
 
+Elke taak heeft een eigen kleur: blauw, groen en oranje. Onder de knoppen staat hoeveel kaarten en diskettes er al
+in je bibliotheek staan.
+
 Linksboven staat altijd de knop **Begin**. Daarmee kom je terug op dit scherm. Rechtsboven staat een **?**.
 Klik daarop als je even niet weet hoe iets werkt: dan zie je het stuk van deze handleiding dat over dat scherm
 gaat.
@@ -128,8 +131,8 @@ terwijl je klikt.
 Onder de songs staan vier knoppen:
 
 - **Verplaatsen naar…**: de song gaat naar een andere map. Je kiest de map uit een tabel met per map het
-  nummer, de naam, hoeveel songs erin staan en hoeveel plaatsen nog vrij zijn. Volle mappen staan er niet
-  in. Onderaan staat **+ Nieuwe map…**.
+  nummer, de naam, hoeveel songs erin staan en hoeveel plaatsen nog vrij zijn. Een volle map staat er grijs in
+  ("vol") en kun je niet kiezen. Onderaan staat **+ Nieuwe map…**.
 - **Kopiëren naar…**: de song komt er in een andere map bij. Het origineel blijft staan.
 - **Andere naam**: de song een andere naam geven.
 - **Weghalen**: de song van de kaart halen.
@@ -458,19 +461,20 @@ meteen **Klaar**.
   die je ordent. Dan kun je songs uit de bibliotheek op die kaart zetten.
 - **Een tweede kaart ernaast**: met **Bestand › Tweede kaart ernaast…** zie je een tweede kaart, waaruit je songs
   naar de open kaart sleept. Daarvoor heb je twee kaartlezers nodig.
-- **Songlijst afdrukken**: **Meer… › Songlijst afdrukken (PDF)…** maakt een overzicht van alle songs op de
-  kaart, om te printen. Je kiest zelf wat erop komt: map voor map of alle songs op naam (van A tot Z, handig
+- **Songlijst opslaan**: **Meer… › Songlijst opslaan (PDF of CSV)…** maakt een overzicht van alle songs op de
+  kaart, om te printen of in Excel te openen. Je kiest zelf wat erop komt: map voor map of alle songs op naam (van A tot Z, handig
   om snel een song op te zoeken), een eigen titel, de datum en bladzijdenummers onderaan, grote letters voor
   op de muziekstandaard, liggend papier, en of lege mappen erin moeten. De app onthoudt je keuze voor de
   volgende keer. De kolommen krijgen de ruimte die het papier heeft. Kies je veel kolommen, dan worden de
-  letters kleiner, en pas als het dan nog niet past, worden lange teksten ingekort met "…". Met het vinkje
+  letters kleiner (tot 8 punt) en draait de app het papier zelf een kwartslag als dat de letters groter
+  houdt; dat geldt ook met grote letters. Pas als het dan nog niet past, worden lange teksten ingekort met
+  "…". Nooit loopt een kolom over de rand van het papier. Met **Liggend papier** is het papier altijd liggend. Met het vinkje
   **Songs in diskette-sets elk op een eigen regel** staat elke song uit zo'n set apart in de lijst, met de naam
   van de set erbij. Heb je een bibliotheek, dan kies je bovenaan of de lijst over de open kaart gaat of over de
   hele bibliotheek. Op naam (A tot Z) zie je dan per song op welke kaart, in welke map en op welk nummer hij staat.
   Bovenaan het venster kies je **Opslaan als**: een PDF om af te drukken, of een CSV voor Excel of Numbers.
   De CSV is precies dezelfde lijst, zonder opmaak: Map en Mapnaam staan vooraan in elke regel in plaats van
-  als kop, en lege kolommen blijven weg. **Meer… › Songlijst voor Excel (CSV)…** opent hetzelfde venster, met
-  CSV al gekozen.
+  als kop, en lege kolommen blijven weg. De app onthoudt wat je de vorige keer koos.
 - **Een kopie van de bibliotheek**: **Meer… › Kopie van de bibliotheek maken…** zet je hele bibliotheek op een
   USB-stick of een externe schijf. Kies de stick en klik op **Kopie hier maken**. Elk bestand wordt
   gecontroleerd. Doe je het later nog eens, dan kopieert het programma alleen wat nieuw of veranderd is.

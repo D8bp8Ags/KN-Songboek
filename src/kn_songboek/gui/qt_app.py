@@ -232,26 +232,48 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------------ start screen, top bar, draft bar
     def _build_start_page(self) -> QWidget:
         w = QWidget(self)
-        lay = QVBoxLayout(w)
-        lay.setContentsMargins(style.px(60), style.px(40), style.px(60), style.px(40))
-        self.start_title = QLabel(w)
+        outer = QVBoxLayout(w)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        # A coloured band at the top with the question, and the app's name under it
+        band = QFrame(w)
+        band.setObjectName("startband")
+        bl = QVBoxLayout(band)
+        bl.setContentsMargins(style.px(20), style.px(26), style.px(20), style.px(24))
+        bl.setSpacing(style.px(4))
+        self.start_title = QLabel(band)
         f = self.start_title.font()
         f.setPointSize(f.pointSize() * 2)
         f.setBold(True)
         self.start_title.setFont(f)
         self.start_title.setAlignment(Qt.AlignCenter)
-        lay.addStretch(1)
-        lay.addWidget(self.start_title)
-        lay.addSpacing(20)
+        self.start_sub = QLabel(band)
+        style.mark(self.start_sub, role="sub")
+        self.start_sub.setAlignment(Qt.AlignCenter)
+        bl.addWidget(self.start_title)
+        bl.addWidget(self.start_sub)
+        outer.addWidget(band)
+        body = QWidget(w)
+        lay = QVBoxLayout(body)
+        lay.setContentsMargins(style.px(60), style.px(30), style.px(60), style.px(30))
+        lay.setSpacing(style.px(14))
+        outer.addWidget(body, 1)
         self.task_buttons = {}
-        for key, method in self.presenter.TASKS:
-            b = TaskButton(w)
+        for number, (key, method) in enumerate(self.presenter.TASKS, 1):
+            b = TaskButton(body, number)                # each task its own colour: blue, green, orange
             b.clicked.connect(lambda _=False, m=method: self._task(m))
             self.task_buttons[key] = b
             lay.addWidget(b)
-        lay.addSpacing(10)                              # small, under the three tasks: not a fourth task
+        lay.addSpacing(style.px(6))                     # small, under the three tasks: not a fourth task
+        # What is in the library: a friendly sign that the cards and diskettes kept so far are safe
+        self.library_line = QLabel(body)
+        self.library_line.setObjectName("libsummary")
+        self.library_line.setTextFormat(Qt.RichText)
+        self.library_line.setAlignment(Qt.AlignCenter)
+        self.library_line.setWordWrap(True)
+        lay.addWidget(self.library_line)
         # Practising: a bar that says so, what is in the practice card reader, and the hand that puts a card in
-        self.practice_box = QFrame(w)
+        self.practice_box = QFrame(body)
         self.practice_box.setObjectName("practice")
         pb = QVBoxLayout(self.practice_box)
         self.practice_text = QLabel(self.practice_box)
@@ -272,14 +294,25 @@ class MainWindow(QMainWindow):
         pb.addWidget(self.practice_reader)
         pb.addLayout(prow)
         self.practice_box.hide()
-        lay.insertWidget(1, self.practice_box)          # above the question: you see it first
-        self.practice_button = QPushButton(w)
+        lay.insertWidget(0, self.practice_box)          # above the tasks: you see it first
+        self.practice_button = QPushButton(body)
         self.practice_button.setObjectName("link")
         self.practice_button.setCursor(Qt.PointingHandCursor)
         self.practice_button.clicked.connect(lambda: self.presenter.start_practice())
         lay.addWidget(self.practice_button, 0, Qt.AlignCenter)
-        lay.addStretch(2)
+        lay.addStretch(1)
         return w
+
+    def show_library_summary(self) -> None:
+        """The line under the tasks: what is in the library (the open one, else the one chosen before)."""
+        root = "" if self.presenter.library is not None else str(self.settings.value("last_library", "") or "")
+        try:
+            text = self.presenter.library_summary(root)
+        except OSError:
+            text = ""
+        ok = style.colours()["ok"]
+        self.library_line.setText(text.replace("<b>", '<b style="color:%s">' % ok))
+        self.library_line.setVisible(bool(text))
 
     def _build_top_bar(self) -> QHBoxLayout:
         bar = QHBoxLayout()
@@ -469,7 +502,8 @@ class MainWindow(QMainWindow):
         Drawn in the text colour, so again after the system switches between light and dark."""
         c = style.colours()
         for key, b in self.task_buttons.items():
-            b.set_picture(self.TASK_ICONS.get(key, "card"))
+            b.set_picture(self.TASK_ICONS.get(key, "card"))     # in the task's colour, light or dark
+        self.show_library_summary()                              # its numbers are coloured too
         for key, b in self.song_buttons.items():
             b.setIcon(icons.icon(self.SONG_ICONS[key]))
         for b in [*self.song_buttons.values(), self.back_button, self.undo_button, self.redo_button,
@@ -614,6 +648,8 @@ class MainWindow(QMainWindow):
         self.toast.hide()
         self._show_tip(page)
         self.pages.setCurrentIndex(0 if page == "start" else 1)
+        if page == "start":
+            self.show_library_summary()
         self._library_beside(page == "compose" or self.acts["library"].isChecked())
         # putting a card together: the library is always there, so its on/off is grey (and not in Meer…)
         self.acts["library"].setEnabled(page != "compose")
@@ -892,9 +928,9 @@ class MainWindow(QMainWindow):
             ("open", QKeySequence.Open, self._open),
             ("open_library", None, self._open_library),
             ("save", QKeySequence.Save, self._save),
-            ("backups", None, self._backups), ("export_csv", None, self._export_csv),
+            ("backups", None, self._backups),
             ("copy_library", None, self._copy_library),
-            ("export_pdf", None, self._export_pdf), ("quit", QKeySequence.Quit, self.close),
+            ("export", None, self._export), ("quit", QKeySequence.Quit, self.close),
             ("undo", QKeySequence.Undo, self._undo), ("redo", QKeySequence.Redo, self._redo),
             ("rename", "F2", self._rename), ("delete", [QKeySequence.Delete, "Ctrl+Backspace"], self._delete),
             # Cmd+M is "minimise" on a Mac: moving songs is Shift+Cmd+M
@@ -944,7 +980,7 @@ class MainWindow(QMainWindow):
         # Extra: looking into songs, and help when something is wrong. One way for each thing: "Kaart doet
         # raar?" checks and offers the repair, so "check" and "repair" are not listed on their own.
         for key, names in [("file", ["start", None, "open", "open_library", "copy_library", None, "save",
-                                     None, "open_other", "close_other", None, "export_pdf", "export_csv", None, "quit"]),
+                                     None, "open_other", "close_other", None, "export", None, "quit"]),
                            ("edit", ["undo", "redo", None, "find", "select_all", None, "rename", "move", "copy",
                                      "delete", None, "new_folder", "rename_folder"]),
                            ("view", ["library", "lists", "history", None, "info_panel", "info_detail"]),
@@ -1028,6 +1064,8 @@ class MainWindow(QMainWindow):
         self.card_head.set_text(t("card_head"), t("card_head_info"))
         self.welcome_text.setText(t("welcome"))
         self.start_title.setText(t("start_question"))
+        self.start_sub.setText(t("start_sub", app=APP_NAME))
+        self.show_library_summary()
         self.practice_button.setText(t("practice_link"))
         self.practice_text.setText(t("practice_banner"))
         self.practice_swap.setText(t("btn_practice_swap"))
@@ -1260,6 +1298,7 @@ class MainWindow(QMainWindow):
         self._filling = True
         self.library_panel.show(title, cards, rows)
         self._filling = False
+        self.show_library_summary()
         self._export_acts()
 
     def _export_acts(self) -> None:
@@ -1267,8 +1306,7 @@ class MainWindow(QMainWindow):
         if hasattr(self, "acts"):
             p = self.presenter
             on = p.session is not None or p.library is not None
-            for key in ("export_csv", "export_pdf"):
-                self.acts[key].setEnabled(on)
+            self.acts["export"].setEnabled(on)
 
     def _open_library(self):
         t = self.presenter.t
@@ -1373,7 +1411,7 @@ class MainWindow(QMainWindow):
 
     def set_actions(self, a: Actions) -> None:
         t = self.presenter.t
-        for key in ("backups", "export_csv", "export_pdf", "rename", "rename_folder", "move", "copy",
+        for key in ("backups", "export", "rename", "rename_folder", "move", "copy",
                     "delete", "check", "repair", "check_card", "open_other", "close_other", "lists", "duplicates"):
             self.acts[key].setEnabled(a.card)
         self._export_acts()
@@ -1573,14 +1611,9 @@ class MainWindow(QMainWindow):
             self._in_flow("backup_library_title", ["step_name", "step_keep", "step_done"],
                           lambda: p.restore_to_library(path, dlg.library_name()))
 
-    def _export_csv(self):
-        self._export("csv")
-
-    def _export_pdf(self):
-        self._export("pdf")
-
-    def _export(self, kind: str) -> None:
-        """Ask what goes in the song list (remembered for next time), then where to save it."""
+    def _export(self, kind: Optional[str] = None) -> None:
+        """Ask what goes in the song list and as what (PDF or CSV, remembered for next time), then where
+        to save it."""
         p, t = self.presenter, self.presenter.t
         dlg = ExportDialog(self, kind)
         if dlg.exec() != QDialog.Accepted:
@@ -1589,7 +1622,7 @@ class MainWindow(QMainWindow):
         c = dlg.choice()
         kind = c["format"]                              # one window for both: the file is the only difference
         name, filt = ("songlijst.csv", "CSV (*.csv)") if kind == "csv" else ("songlijst.pdf", "PDF (*.pdf)")
-        path, _ = QFileDialog.getSaveFileName(self, t("act.export_" + kind), name, filt)
+        path, _ = QFileDialog.getSaveFileName(self, t("act.export"), name, filt)
         if not path:
             return
         lib, view = c["source"] != "card", c["source"] == "view"
@@ -1607,8 +1640,8 @@ class MainWindow(QMainWindow):
                                     by_name=c["by_name"], title=c["title"], fit=fit)
         if html is not None:
             export_pdf(html, path, date=p.today_text() if c["date"] else "",
-                       pages=t("pdf_page") if c["pages"] else "", big=c["big"], landscape=c["landscape"],
-                       pt=p.list_font)
+                       pages=t("pdf_page") if c["pages"] else "", big=c["big"],
+                       landscape=c["landscape"] if p.list_page is None else p.list_page, pt=p.list_font)
             self.show_status(t("exported", path=path))
 
     def closeEvent(self, ev):
@@ -1701,13 +1734,22 @@ def export_pdf(html: str, path: str, date: str = "", pages: str = "", big: bool 
     foot = fm.height() * 2.5 if (date or pages) else 0.0
     body = QSizeF(area.width(), area.height() - foot)
     doc.setPageSize(body)
+    # Never past the edge of the paper: a table that is still too wide (another font than measured,
+    # for example) is made smaller as a whole, the way a spreadsheet prints, instead of being cut off.
+    scale = min(1.0, body.width() / max(1.0, doc.size().width()))
+    if scale < 1.0:
+        doc.setPageSize(QSizeF(body.width() / scale, body.height() / scale))
+    page = doc.pageSize()
     total = doc.pageCount()
     painter = QPainter(w)
     try:
         for i in range(total):
             if i:
                 w.newPage()
-            draw_page(painter, doc, i, body)
+            painter.save()
+            painter.scale(scale, scale)
+            draw_page(painter, doc, i, page)
+            painter.restore()
             if foot:
                 painter.setFont(small)
                 painter.setPen(QColor(110, 110, 110))     # paper is always white: no theme colour here
@@ -1720,18 +1762,19 @@ def export_pdf(html: str, path: str, date: str = "", pages: str = "", big: bool 
 
 PDF_DPI = 150
 LIST_SIZES = (11.0, 9.5, 8.0)              # letter sizes a song list may use, largest first
-LIST_SIZES_BIG = (15.0, 13.0, 11.0)
+LIST_SIZES_BIG = (15.0, 13.0, 11.0, 9.5, 8.0)  # as big as can be, but smaller rather than cut off
 LIST_GAP = 26.0                            # room per column for its cell padding, in PDF pixels (measured)
 
 
-def list_fit(big: bool = False, landscape: bool = False) -> List[Tuple[float, tuple]]:
-    """For each letter size a printed song list may use (largest first): (size, (width, measure, gap)),
+def list_fit(big: bool = False, landscape: bool = False) -> List[Tuple[float, tuple, bool]]:
+    """The pages a printed song list may use, best first: (letter size, (width, measure, gap), landscape),
     with the width between the margins of A4 (15 mm each side) and measure(text, bold) the real width
-    of a text in the font the PDF uses, so the columns get exactly the room the page has."""
+    of a text in the font the PDF uses, so the columns get exactly the room the page has. Per letter size
+    standing paper first, then lying (with landscape: only lying), so the letters stay as big as they
+    can before anything is cut off."""
     img = QImage(10, 10, QImage.Format_RGB32)
     img.setDotsPerMeterX(round(PDF_DPI / 0.0254))
     img.setDotsPerMeterY(round(PDF_DPI / 0.0254))
-    width = ((297 if landscape else 210) - 30) / 25.4 * PDF_DPI
     out = []
     for pt in (LIST_SIZES_BIG if big else LIST_SIZES):
         font = QFont(QTextDocument().defaultFont())
@@ -1746,7 +1789,9 @@ def list_fit(big: bool = False, landscape: bool = False) -> List[Tuple[float, tu
             if key not in cache:
                 cache[key] = (bold_m if is_bold else plain_m).horizontalAdvance(text)
             return cache[key]
-        out.append((pt, (width * 0.99, measure, LIST_GAP)))
+        for lying in ((True,) if landscape else (False, True)):
+            width = ((297 if lying else 210) - 30) / 25.4 * PDF_DPI
+            out.append((pt, (width * 0.97, measure, LIST_GAP), lying))
     return out
 
 

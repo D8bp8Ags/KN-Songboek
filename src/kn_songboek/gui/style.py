@@ -61,6 +61,10 @@ LIGHT = {
     "toast_bg": "#2b2b2b", "toast_text": "#ffffff", "toast_link": "#8cc4ff",
     "drop": "#f2b600",
     "lib_bg": "#eaf2ec", "lib_border": "#a9c9b1", "card_bg": "#e9eff8", "card_border": "#a7bddb",
+    "band_top": "#1d3557", "band_bottom": "#274b7a", "band_text": "#ffffff", "band_sub": "#c4d5ee",
+    "task_bg": "#ffffff", "task_border": "#d6d6d6", "task_hover": "#f5f8fc",
+    "task1": "#1f6fd1", "task1_bg": "#e3efff", "task2": "#237a3d", "task2_bg": "#e3f3e7",
+    "task3": "#b86e00", "task3_bg": "#fff1d6",
 }
 DARK = {
     "accent": "#2f74d0", "accent_hover": "#4a8ae0", "on_accent": "#ffffff", "accent_text": "#7ab4ff",
@@ -71,6 +75,10 @@ DARK = {
     "toast_bg": "#ececec", "toast_text": "#1a1a1a", "toast_link": "#0a58c2",
     "drop": "#ffcf33",
     "lib_bg": "#1f2b23", "lib_border": "#3f6b4b", "card_bg": "#1d2533", "card_border": "#3d5a85",
+    "band_top": "#13233a", "band_bottom": "#1c3556", "band_text": "#ffffff", "band_sub": "#b3c7e6",
+    "task_bg": "#2a2a2a", "task_border": "#444444", "task_hover": "#323842",
+    "task1": "#5e9eee", "task1_bg": "#1c2c43", "task2": "#5cc97a", "task2_bg": "#1d3324",
+    "task3": "#f0a030", "task3_bg": "#3b2e15",
 }
 
 # Colour only where it means something: blue (accent) for the one thing to do next (Op kaart zetten,
@@ -105,6 +113,18 @@ QFrame#libpanel { background: %(lib_bg)s; border: 1px solid %(lib_border)s; bord
 QFrame#libpanel QLabel, QFrame#libpanel QCheckBox { background: transparent; }
 QFrame#cardpanel { background: %(card_bg)s; border: 1px solid %(card_border)s; border-radius: 8px; }
 QFrame#cardpanel QLabel, QFrame#cardpanel QCheckBox { background: transparent; }
+QFrame#startband { border: none; background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 %(band_top)s, stop:1 %(band_bottom)s); }
+QFrame#startband QLabel { background: transparent; color: %(band_text)s; }
+QFrame#startband QLabel[role="sub"] { color: %(band_sub)s; }
+QPushButton#task { background: %(task_bg)s; border: 1px solid %(task_border)s; border-radius: 14px;
+    text-align: left; padding: 0; }
+QPushButton#task:hover { background: %(task_hover)s; }
+QPushButton#task:pressed { background: %(task1_bg)s; }
+QPushButton#task[task="2"]:pressed { background: %(task2_bg)s; }
+QPushButton#task[task="3"]:pressed { background: %(task3_bg)s; }
+QPushButton#task QLabel { background: transparent; color: %(text)s; }
+QLabel#libsummary { color: %(muted)s; }
 QFrame#practice { background: %(draft_bg)s; border: 2px solid %(warn)s; border-radius: 8px; }
 QFrame#practice QLabel { color: %(draft_text)s; background: transparent; border: none; }
 QFrame#donebox { border: 1px solid %(line)s; border-radius: 6px; }

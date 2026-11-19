@@ -371,6 +371,9 @@ class StartScreenGuiTest(unittest.TestCase):
             self.assertEqual(w.pages.currentIndex(), 0)
             self.assertEqual(len(w.task_buttons), 3)
             self.assertTrue(w.task_buttons["task_compose"].text().startswith("Nieuwe kaart samenstellen"))
+            # each task its own colour (blue, green, orange) and a line about the library only when there is one
+            self.assertEqual([b.property("task") for b in w.task_buttons.values()], ["1", "2", "3"])
+            self.assertTrue(w.library_line.isHidden())
             self.assertFalse(w.dock.isVisible() or w.lists_dock.isVisible())
             card = os.path.join(t, "kaart")
             s = CardSession.create(DirectoryStorage(card))
