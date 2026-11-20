@@ -279,6 +279,11 @@ def apply(app) -> None:
     if app is None or app.property("kn_songboek_comfort"):
         return
     from PySide6.QtCore import QEvent, QObject, QTimer
+    import sys
+    if sys.platform.startswith("win"):
+        # Windows 11's own Qt style does not go together with a style sheet: check boxes lose their tick
+        # (you cannot see what is ticked) and the menu bar gets huge gaps. Fusion draws them all plainly.
+        app.setStyle("Fusion")
     _fonts(app)
     if _scale != 1.0:
         app._kn_songboek_style = _grown_style(app)          # kept: Python must not let go of it

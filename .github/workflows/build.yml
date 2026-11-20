@@ -88,6 +88,9 @@ jobs:
         run: |
           $p = Start-Process -FilePath "dist\KN-Songboek.exe" -ArgumentList "--self-test","--screenshot","$PWD\venster-windows.png" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "screenshot failed: $($p.ExitCode)" }
+          Write-Output "SCREENSHOT-BASE64-BEGIN"
+          [Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\venster-windows.png")) -split '(.{4000})' | Where-Object { $_ } | ForEach-Object { Write-Output "B64:$_" }
+          Write-Output "SCREENSHOT-BASE64-END"
       - uses: actions/upload-artifact@v7
         if: runner.os == 'Windows'
         with:
@@ -115,6 +118,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: downloads
+          pattern: KN-Songboek *
           merge-multiple: true
       - name: Put the apps on the Releases page
         env:
