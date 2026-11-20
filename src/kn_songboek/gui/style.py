@@ -38,6 +38,7 @@ QListView::item { min-height: %(row)dpx; padding: 0 6px; }
 QTreeView::item { min-height: %(tree)dpx; }
 QLineEdit, QComboBox, QSpinBox { min-height: %(field)dpx; }
 QTabBar::tab { min-height: %(field)dpx; padding: 4px 14px; }
+QMenuBar::item { padding: 4px 10px; }
 QCheckBox::indicator, QRadioButton::indicator { width: 14px; height: 14px; }
 """ % {"button": BUTTON_HEIGHT, "row": ROW_HEIGHT - 6, "tree": ROW_HEIGHT - 10, "field": 30}
 

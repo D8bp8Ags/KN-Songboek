@@ -1401,6 +1401,10 @@ class MainWindow(QMainWindow):
         return box
 
     def set_title(self, text: str) -> None:
+        # Windows and Linux put the app's name after every window title themselves ("nieuwe kaart - KN
+        # Songboek"); without this it would be there twice.
+        if sys.platform != "darwin" and text.startswith(APP_NAME + " - "):
+            text = text[len(APP_NAME) + 3:]
         self.setWindowTitle(text)
 
     def _song_acts(self) -> None:

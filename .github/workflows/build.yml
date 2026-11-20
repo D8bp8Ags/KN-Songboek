@@ -82,6 +82,18 @@ jobs:
         run: |
           $p = Start-Process -FilePath "dist\KN-Songboek.exe" -ArgumentList "--self-test" -Wait -PassThru
           if ($p.ExitCode -ne 0) { throw "self-test failed: $($p.ExitCode)" }
+      - name: Picture of the window (Windows, real screen driver)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "dist\KN-Songboek.exe" -ArgumentList "--self-test","--screenshot","$PWD\venster-windows.png" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "screenshot failed: $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v7
+        if: runner.os == 'Windows'
+        with:
+          name: Venster op Windows
+          path: venster-windows.png
+          retention-days: 7
       - uses: actions/upload-artifact@v7
         with:
           name: KN-Songboek ${{ matrix.name }}

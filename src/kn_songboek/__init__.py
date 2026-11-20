@@ -6,7 +6,7 @@ Layers (outer may import inner, never the other way round):
     storage/           where bytes live (directory, memory, later FAT image)
     formats/           pure byte formats (INF, containers, card layout)
 """
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 # The name people see (windows, menus, About, the .app/.exe) and the name of the folders for back-ups.
 APP_NAME = "KN Songboek"
