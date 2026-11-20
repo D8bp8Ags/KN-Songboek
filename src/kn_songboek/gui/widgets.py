@@ -3,6 +3,7 @@ panel, the start-screen task buttons, the toast and the progress bar in the stat
 from __future__ import annotations
 
 import os
+import sys
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from PySide6.QtCore import (
@@ -1533,7 +1534,11 @@ class TaskButton(QPushButton):
         self.layout().setGeometry(self.rect())          # a button does not lay out its own children by itself
 
 
-DOCS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "docs"))
+# The manual and its pictures: docs/ of the repository, or packed into the app (tools/build_app.py).
+if getattr(sys, "frozen", False):
+    DOCS = os.path.join(getattr(sys, "_MEIPASS", os.path.dirname(sys.executable)), "docs")
+else:
+    DOCS = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "docs"))
 HELP_CHAPTERS = {"start": [1], "organize": [2, 3, 4, 5], "compose": [7]}
 
 

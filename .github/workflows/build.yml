@@ -1,0 +1,124 @@
+# Test and build KN Songboek on macOS and Windows.
+#
+# - Every push to main: the tests on both, then the apps. Download them under Actions › (the run) › Artifacts.
+# - By hand: Actions › "Bouwen en testen" › Run workflow. Tick "Uitgave maken" to put the apps on the
+#   Releases page, where anyone can download them without a GitHub account.
+# - A tag like v0.3.0 also makes a release.
+name: Bouwen en testen
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Uitgave maken (op de Releases-pagina, voor iedereen te downloaden)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e ".[gui,dev]"
+      - name: Checks (lint, types, privacy, tests)
+        env:
+          QT_QPA_PLATFORM: offscreen
+          PYTHONUTF8: "1"
+        run: python tools/check.py
+
+  build:
+    name: App (${{ matrix.name }})
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS Apple Silicon
+            os: macos-latest
+          - name: macOS Intel
+            os: macos-15-intel
+          - name: Windows
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install ".[gui]" pyinstaller pillow
+      - name: Build
+        run: python tools/build_app.py --zip
+      - name: Try the app (macOS)
+        if: runner.os == 'macOS'
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: '"dist/KN Songboek.app/Contents/MacOS/KN Songboek" --self-test'
+      - name: Try the app (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $p = Start-Process -FilePath "dist\KN-Songboek.exe" -ArgumentList "--self-test" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "self-test failed: $($p.ExitCode)" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: KN-Songboek ${{ matrix.name }}
+          path: |
+            dist/*.zip
+            dist/*-Windows.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Uitgave
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && inputs.release)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: downloads
+          merge-multiple: true
+      - name: Put the apps on the Releases page
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(python3 -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('src/kn_songboek/__init__.py').read()).group(1))")
+          tag="${GITHUB_REF_NAME}"
+          case "$tag" in v*) ;; *) tag="v$version" ;; esac
+          cat > notes.md <<'NOTES'
+          **Downloaden / Download**
+
+          - **Windows**: `KN-Songboek-…-Windows.exe`. Dubbelklik. Zie je "Windows heeft uw pc beveiligd", klik dan op *Meer informatie* en *Toch uitvoeren*. / Double-click. If you see "Windows protected your PC", click *More info*, then *Run anyway*.
+          - **Mac met Apple-chip (M1 of nieuwer)**: `…-macOS-AppleSilicon.zip`. **Oudere Mac (Intel)**: `…-macOS-Intel.zip`. Welke je hebt: Apple-menu › Over deze Mac. / Which one: Apple menu › About This Mac.
+            Pak de zip uit en sleep *KN Songboek* naar *Apps*. De eerste keer: probeer de app te openen, ga dan naar *Systeeminstellingen › Privacy en beveiliging* en klik onderaan op *Open toch*. / Unzip, drag to Applications. First time: try to open it, then *System Settings › Privacy & Security › Open Anyway*.
+          NOTES
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" downloads/* --clobber
+          else
+            gh release create "$tag" downloads/* --title "KN Songboek $version" --notes-file notes.md --target "$GITHUB_SHA"
+          fi

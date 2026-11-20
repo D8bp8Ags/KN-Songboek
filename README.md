@@ -45,9 +45,11 @@ is always a backup.
 ### Get started in 3 steps
 
 1. **Download** the latest version from [Releases](../../releases):
-   - **macOS**: `KN-Songboek.app`. Drag it to *Applications*. The first time, right-click the app and choose
-     *Open* (the app is not registered with Apple).
-   - **Windows**: `KN-Songboek.exe`. If you see "Windows protected your PC", click *More info* and then
+   - **macOS**: `…-macOS-AppleSilicon.zip` for a Mac with an Apple chip (M1 or newer), `…-macOS-Intel.zip`
+     for an older Mac (Apple menu › *About This Mac* tells you which). Unzip it and drag *KN Songboek* to
+     *Applications*. The first time macOS will not open it (the app is not registered with Apple): try once,
+     then go to *System Settings › Privacy & Security* and click *Open Anyway*.
+   - **Windows**: `…-Windows.exe`. If you see "Windows protected your PC", click *More info* and then
      *Run anyway*.
 2. **Put your SD card in the computer** (or a diskette in a USB floppy drive).
 3. **Start the app and pick a task**: *Look at and arrange a card*, *Put together a new card*, or *Keep a card or
@@ -121,9 +123,12 @@ dat zegt, en er is altijd een back-up.
 ### Beginnen in 3 stappen
 
 1. **Download** de nieuwste versie bij [Releases](../../releases):
-   - **macOS**: `KN-Songboek.app`. Sleep die naar *Programma's*. De eerste keer klik je met de rechtermuisknop
-     op de app en kies je *Open* (de app is niet bij Apple aangemeld).
-   - **Windows**: `KN-Songboek.exe`. Zie je "Windows heeft uw pc beschermd"? Klik dan op *Meer informatie* en
+   - **macOS**: `…-macOS-AppleSilicon.zip` voor een Mac met Apple-chip (M1 of nieuwer), `…-macOS-Intel.zip`
+     voor een oudere Mac (Apple-menu › *Over deze Mac* laat zien welke je hebt). Pak de zip uit en sleep
+     *KN Songboek* naar *Programma's*. De eerste keer opent macOS hem niet (de app is niet bij Apple
+     aangemeld): probeer het één keer, ga dan naar *Systeeminstellingen › Privacy en beveiliging* en klik op
+     *Open toch*.
+   - **Windows**: `…-Windows.exe`. Zie je "Windows heeft uw pc beschermd"? Klik dan op *Meer informatie* en
      daarna op *Toch uitvoeren*.
 2. **Doe je SD-kaart in de computer** (of een diskette in een USB-diskettestation).
 3. **Start de app en kies een taak**: *Kaart bekijken en ordenen*, *Nieuwe kaart samenstellen* of *Kaart of

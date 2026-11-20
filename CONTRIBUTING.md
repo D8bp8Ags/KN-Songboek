@@ -71,6 +71,22 @@ git config user.name "jouw-github-naam"
 git config user.email "NNN+jouw-github-naam@users.noreply.github.com"
 ```
 
+## De app bouwen (.app en .exe)
+
+GitHub bouwt de app zelf bij elke push naar `main` (`.github/workflows/build.yml`): eerst de controles op macOS
+en Windows, dan de app voor Mac (Apple-chip en Intel) en Windows, en daarna een korte proef of de gebouwde app
+start en de handleiding vindt. De bestanden staan bij *Actions* › de run › *Artifacts* (alleen met een
+GitHub-account). Een uitgave voor iedereen: *Actions* › *Bouwen en testen* › *Run workflow* met het vinkje
+*Uitgave maken*, of een tag zoals `v0.3.0`. Dan komen de bestanden op de *Releases*-pagina, met uitleg voor
+het openen. Verhoog eerst `__version__` in `src/kn_songboek/__init__.py`.
+
+Zelf bouwen kan ook, op de computer waarvoor je bouwt (een Mac bouwt geen .exe):
+
+```bash
+pip install ".[gui]" pyinstaller pillow
+python tools/build_app.py --zip      # resultaat in dist/
+```
+
 ## Documentatie
 
 - Handleiding voor gebruikers: [docs/nl/handleiding.md](docs/nl/handleiding.md) en [docs/en/manual.md](docs/en/manual.md)
