@@ -1016,6 +1016,7 @@ class MainPresenter(SongDetails):
 
     # -------------------------------------------------------------- second card
     def open_other(self, path: str) -> bool:
+        path = cards.card_root(path)
         o = self._guard(self._opener, path)
         if o is FAIL:
             return False
@@ -1527,6 +1528,7 @@ class MainPresenter(SongDetails):
 
     # -------------------------------------------------------------- opening and navigation
     def open_card(self, path: str) -> bool:
+        path = cards.card_root(path)         # KN7000, TECHNICS or PRIVATE chosen: the card they are in
         if self._is_library(path):          # a common mix-up: the library folder chosen instead of a card
             if self.view.ask(self.t("is_library", path=path), [self.t("btn_use_library")]) == 0:
                 opener = getattr(type(self.view), "open_library", None)       # the window also remembers it

@@ -148,3 +148,21 @@ class VolumeNameTests(unittest.TestCase):
         self.assertEqual(len(calls), 3)
         with mock.patch.object(cards.sys, "platform", "linux"), mock.patch.object(cards.windows, "WINDOWS", False):
             self.assertIsNone(cards.rename_volume("/media/x", "FEEST"))
+
+
+class CardRootTests(unittest.TestCase):
+    """Someone chooses the KN7000 folder (or PRIVATE, TECHNICS, a song folder) instead of the card itself."""
+
+    def test_a_folder_inside_a_card_means_the_card(self):
+        with tempfile.TemporaryDirectory() as t:
+            card = os.path.join(t, "Technics 7000")
+            kn = os.path.join(card, "PRIVATE", "TECHNICS", "KN7000")
+            os.makedirs(os.path.join(kn, "TFLD001"))
+            open(os.path.join(kn, "KN7000MN.INF"), "wb").close()
+            for inside in ("", "PRIVATE", os.path.join("PRIVATE", "TECHNICS"), os.path.join("PRIVATE", "TECHNICS", "KN7000"),
+                           os.path.join("PRIVATE", "TECHNICS", "KN7000", "TFLD001")):
+                self.assertEqual(os.path.normpath(cards.card_root(os.path.join(card, inside))), os.path.normpath(card), inside)
+            other = os.path.join(card, "Foto's")
+            os.makedirs(other)
+            self.assertEqual(cards.card_root(other), other)          # not part of the card: left alone
+            self.assertEqual(cards.card_root(t), t)

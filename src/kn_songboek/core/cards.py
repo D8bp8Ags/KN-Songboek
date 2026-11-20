@@ -100,7 +100,29 @@ def _visible(path: str) -> List[str]:
         return []
 
 
+def card_root(path: str) -> str:
+    """The card itself when someone chose a folder inside it: PRIVATE, PRIVATE/TECHNICS or
+    PRIVATE/TECHNICS/KN7000 (or a song folder TFLDnnn in it) of a card copy. Anything else is returned as it is."""
+    p = os.path.normpath(path)
+    if os.path.isdir(p) and (DirectoryStorage(p).exists(layout.INF_PATH) or DirectoryStorage(p).exists(layout.BAK_PATH)):
+        return path
+    parts = layout.KN7_DIR.split("/")                       # PRIVATE, TECHNICS, KN7000
+    for _ in range(len(parts) + 1):                         # at most 4 levels up (TFLDnnn → card)
+        parent = os.path.dirname(p)
+        if parent == p:
+            break
+        p = parent
+        st = DirectoryStorage(p)
+        if os.path.isdir(p) and (st.exists(layout.INF_PATH) or st.exists(layout.BAK_PATH)):
+            inside = os.path.relpath(os.path.normpath(path), p).replace(os.sep, "/").upper()
+            if (layout.KN7_DIR.upper() + "/").startswith(inside + "/") or inside.startswith(layout.KN7_DIR.upper() + "/TFLD"):
+                return p
+            break
+    return path
+
+
 def classify(path: str) -> CardInfo:
+    path = card_root(path)
     name = windows.display_name(path)
     st = DirectoryStorage(path)
     free = st.free_bytes()
