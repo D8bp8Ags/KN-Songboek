@@ -641,6 +641,7 @@ HANDLERS = {
 
 def main(argv=None) -> int:
     args = build_parser().parse_args(argv)
+    h = None
     if args.log:
         h = logging.FileHandler(args.log, encoding="utf-8")
         h.setFormatter(logging.Formatter("%(asctime)s %(message)s"))
@@ -655,6 +656,10 @@ def main(argv=None) -> int:
     except OSError as e:
         print("error: %s" % e, file=sys.stderr)
         return 2
+    finally:
+        if h is not None:                   # close the log file (Windows cannot remove a file that is open)
+            logging.getLogger("kn_songboek").removeHandler(h)
+            h.close()
 
 
 if __name__ == "__main__":

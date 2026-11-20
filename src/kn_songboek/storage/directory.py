@@ -65,7 +65,7 @@ class DirectoryStorage:
                     import fcntl
                     fcntl.fcntl(fd, getattr(fcntl, "F_NOCACHE", 48), 1)
                 elif hasattr(os, "posix_fadvise"):
-                    os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+                    os.posix_fadvise(fd, 0, 0, getattr(os, "POSIX_FADV_DONTNEED", 4))
             except OSError:
                 pass
             return fh.read()

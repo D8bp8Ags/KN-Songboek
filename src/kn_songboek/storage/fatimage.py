@@ -75,6 +75,10 @@ class FatImageStorage:
         except Exception:
             self.fh.close()                 # not an image we can use: do not leave the file open
             raise
+        if self.read_only:
+            # Read-only (the library): do not keep the file open between reads. On Windows an open file
+            # cannot be renamed, moved or deleted, not by the app and not in Verkenner.
+            self.fh.close()
 
     # ------------------------------------------------------------------ volume
     def _mount(self) -> None:
@@ -120,6 +124,10 @@ class FatImageStorage:
                 and s[13] in (1, 2, 4, 8, 16, 32, 64, 128) and s[16] in (1, 2))
 
     def _pread(self, off: int, n: int) -> bytes:
+        if self.read_only:
+            with open(self.path, "rb") as fh:
+                fh.seek(off)
+                return fh.read(n)
         self.fh.seek(off)
         return self.fh.read(n)
 

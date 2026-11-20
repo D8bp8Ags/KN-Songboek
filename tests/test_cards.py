@@ -140,10 +140,11 @@ class VolumeNameTests(unittest.TestCase):
             calls.append(cmd)
             out = {"info": {"DeviceIdentifier": "disk4s1", "MountPoint": "/Volumes/FEEST"}}
             return mock.Mock(returncode=0, stdout=plistlib.dumps(out["info"]))
-        with mock.patch.object(cards.sys, "platform", "darwin"), mock.patch.object(cards.subprocess, "run", run):
+        with mock.patch.object(cards.sys, "platform", "darwin"), mock.patch.object(cards.windows, "WINDOWS", False), \
+                mock.patch.object(cards.subprocess, "run", run):
             self.assertEqual(cards.rename_volume("/Volumes/NO NAME", "feest"), "/Volumes/FEEST")
             self.assertEqual(cards.rename_volume("/Volumes/FEEST", "Feest"), "/Volumes/FEEST")   # already so
         self.assertEqual(calls[1], ["diskutil", "rename", "disk4s1", "FEEST"])
         self.assertEqual(len(calls), 3)
-        with mock.patch.object(cards.sys, "platform", "linux"):
+        with mock.patch.object(cards.sys, "platform", "linux"), mock.patch.object(cards.windows, "WINDOWS", False):
             self.assertIsNone(cards.rename_volume("/media/x", "FEEST"))

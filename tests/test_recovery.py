@@ -240,7 +240,8 @@ class RecoveryTests(unittest.TestCase):
 class DefaultPlaceTests(unittest.TestCase):
     def test_next_to_the_back_ups_and_not_used_by_tests_without_a_draft_dir(self):
         self.assertEqual(os.path.basename(recovery.drafts_dir("/x/KN Songboek/backups")), "concept")
-        self.assertEqual(os.path.dirname(recovery.drafts_dir("/x/KN Songboek/backups")), "/x/KN Songboek")
+        self.assertEqual(os.path.dirname(recovery.drafts_dir(os.path.join("x", "KN Songboek", "backups"))),
+                         os.path.join("x", "KN Songboek"))
         with tempfile.TemporaryDirectory() as t:
             p = MainPresenter(TaskView(), backup_dir=t)
             self.assertIsNone(p.drafts)
