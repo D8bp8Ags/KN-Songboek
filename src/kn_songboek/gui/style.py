@@ -100,6 +100,8 @@ QFrame#tip { background: %(note_bg)s; border: 1px solid %(note_border)s; border-
 QFrame#tip QLabel { color: %(note_text)s; background: transparent; }
 QFrame#draft { background: %(draft_bg)s; border: 1px solid %(draft_border)s; border-radius: 4px; }
 QFrame#draft QLabel { color: %(draft_text)s; background: transparent; }
+QFrame#renamed { background: %(draft_bg)s; border: 1px solid %(draft_border)s; border-radius: 6px; }
+QFrame#renamed QLabel { color: %(draft_text)s; background: transparent; border: none; }
 QFrame#toast { background: %(toast_bg)s; border-radius: 10px; }
 QFrame#toast QLabel { color: %(toast_text)s; background: transparent; }
 QFrame#toast QPushButton { color: %(toast_link)s; background: transparent; border: none; font-weight: bold;

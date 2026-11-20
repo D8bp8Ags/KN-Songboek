@@ -21,6 +21,7 @@ from ..core.errors import InvalidName
 from ..core import backup, duplicates, repair
 from ..core import cards, verify
 from ..core import library as lb
+from ..core import recovery
 from ..formats import layout
 from ..storage import DirectoryStorage, open_storage, trash, windows
 from .i18n import has_key, size_text, tr
@@ -43,6 +44,7 @@ class SongRow:
     name: str                   # "" for an empty slot
     types: str
     used: bool
+    old_name: str = ""          # the name before a rename that is not on the card yet
 
 
 @dataclass(frozen=True)
@@ -106,7 +108,7 @@ class MainView(Protocol):
     def show_other(self, title: str, folders: List[FolderRow], current: int, songs: List[SongRow]) -> None: ...
     def show_library(self, title: str, cards: List[str], rows: List[LibraryRow]) -> None: ...
     def choose(self, text: str, options: List[str]) -> Optional[int]: ...
-    def ask(self, text: str, buttons: List[str]) -> Optional[int]: ...        # None = cancelled
+    def ask(self, text: str, buttons: List[str], cancel: str = "") -> Optional[int]: ...   # None = cancelled
     def ask_text(self, text: str, default: str = "") -> Optional[str]: ...
     def show_page(self, page: str) -> None: ...                             # "start", "organize", "compose"
     def show_header(self, name: str, text: str, used: int, total: int) -> None: ...   # card name + fullness meter
@@ -117,8 +119,14 @@ class MainView(Protocol):
 
 class MainPresenter(SongDetails):
     def __init__(self, view: MainView, opener: Callable[[str], CardSession] = None,
-                 lang: str = "nl", backup_dir: Optional[str] = None):
+                 lang: str = "nl", backup_dir: Optional[str] = None, draft_dir: Optional[str] = None):
         self.view = view
+        # crash recovery (core/recovery.py): the unsaved changes are kept in the app's data folder (never
+        # on the card) while they are made. The real app keeps them next to the back-ups; a presenter made
+        # with its own backup_dir (the tests) only when it is given a draft_dir.
+        if draft_dir is None and backup_dir is None:
+            draft_dir = recovery.drafts_dir()
+        self.drafts = recovery.DraftKeeper(draft_dir) if draft_dir else None
         self.session: Optional[CardSession] = None
         self._opener = opener or (lambda path: CardSession.open(open_storage(path)))
         self.backups = True          # zip the card's KN7000 folder before every save (core/backup.py)
@@ -236,6 +244,7 @@ class MainPresenter(SongDetails):
         if self._quiet:                  # long work running (maybe on another thread): later
             self._missed = True
             return
+        self.keep_draft()
         if hasattr(self.view, "show_practice"):        # the start screen says it while practising
             self.view.show_practice(self.practice_reader_text())
         s = self.session
@@ -264,6 +273,117 @@ class MainPresenter(SongDetails):
             self.view.show_locked(self.t("locked_open") if locked else "")
         self._show_lists()
         self._show_other()
+
+    # -------------------------------------------------------------- crash recovery (core/recovery.py)
+    def _unsaved(self) -> bool:
+        s = self.session
+        return s is not None and (s.dirty or self.composing and any(True for _ in s.db.iter_songs()))
+
+    def keep_draft(self) -> None:
+        """After every change: write the changes that are not on the card yet to the app's data folder,
+        or remove that copy when there are none any more. Never stops the work: a problem is only logged.
+        Not while practising (the practice computer is made new each time)."""
+        if self.drafts is None:
+            return
+        try:
+            if not self._unsaved() or self.practice:
+                self.drafts.clear()
+                return
+            self.drafts.save(self.session, recovery.COMPOSE if self.composing else recovery.ORGANIZE,
+                             "" if self.composing else self.card_path, self.card_name(), self.compose_name)
+        except Exception:                      # never in the way of the work itself
+            recovery.log.exception("keeping the draft failed")
+
+    def forget_draft(self) -> None:
+        """The user chose to quit without putting the changes on the card: nothing to bring back."""
+        if self.drafts is not None:
+            self.drafts.clear()
+
+    def _ask_later(self, text: str, buttons: List[str]) -> Optional[int]:
+        """view.ask with "Later beslissen" instead of "Annuleren" where the view can say that."""
+        try:
+            return self.view.ask(text, buttons, cancel=self.t("btn_draft_later"))
+        except TypeError:
+            return self.view.ask(text, buttons)
+
+    def draft_text(self, info: "recovery.DraftInfo") -> str:
+        when = self.when_text(info.saved)
+        if info.kind == recovery.COMPOSE:
+            return self.t("draft_what_new_1" if info.songs == 1 else "draft_what_new", n=info.songs, when=when)
+        n = max(info.steps, 1)
+        return self.t("draft_what_card_1" if n == 1 else "draft_what_card", n=n,
+                      name=info.card_name or windows.display_name(info.card_path), when=when)
+
+    def offer_drafts(self) -> bool:
+        """At start-up: changes left behind by a session that stopped unexpectedly. Bring them back, throw
+        them away (asked twice), or decide later (asked again at the next start). True when brought back."""
+        if self.drafts is None or self.practice or self.session is not None:
+            return False
+        for info in recovery.left_behind(self.drafts.root, self.drafts.folder):
+            while True:
+                a = self._ask_later(self.t("draft_found", what=self.draft_text(info)),
+                                    [self.t("btn_draft_back"), self.t("btn_draft_discard")])
+                if a is None:
+                    self.view.show_status(self.t("draft_kept"))
+                    return False
+                if a == 1:
+                    if self.view.confirm(self.t("confirm_draft_discard")):
+                        recovery.discard(info)
+                        break
+                    continue
+                return self._bring_back(info)
+        return False
+
+    def _bring_back(self, info: "recovery.DraftInfo") -> bool:
+        while True:
+            why = ""
+            if info.kind == recovery.COMPOSE:
+                s = self._guard(cards.new_card)
+                if s is FAIL:
+                    return False
+                try:
+                    recovery.apply(info, s)
+                except recovery.RecoveryError as e:
+                    why = self.error_text(e)
+                else:
+                    self._begin_compose(s)
+                    self.compose_name = info.compose_name
+                    self.refresh()
+                    break
+            elif not os.path.exists(info.card_path):
+                a = self._ask_later(self.t("draft_need_card", name=info.card_name), [self.t("btn_try_again")])
+                if a is None:
+                    self.view.show_status(self.t("draft_kept"))
+                    return False
+                continue
+            else:
+                try:
+                    s = self._opener(info.card_path)
+                    recovery.apply(info, s)
+                except recovery.RecoveryError as e:
+                    why = self.error_text(e)
+                except KN7Error as e:
+                    why = self.error_text(e)
+                except OSError as e:
+                    why = self.os_error_text(e)
+                else:
+                    self.session, self.card_path, self.query, self.composing = s, info.card_path, "", False
+                    self.folder = next((f.folder for f in s.folders()), 1)
+                    s.on_change(self.refresh)
+                    self.page = "organize"
+                    self.view.show_page("organize")
+                    self.refresh()
+                    break
+            a = self._ask_later(self.t("draft_not_back", why=why), [self.t("btn_try_again"), self.t("btn_draft_discard")])
+            if a is None:
+                self.view.show_status(self.t("draft_kept"))
+                return False
+            if a == 1 and self.view.confirm(self.t("confirm_draft_discard")):
+                recovery.discard(info)
+                return False
+        recovery.discard(info)                 # its changes live on in this window's own draft now
+        self.view.show_done(self.t("draft_back"))
+        return True
 
     def _show_nothing(self) -> None:
         self.view.show_folders([], 0)
@@ -1152,8 +1272,24 @@ class MainPresenter(SongDetails):
             return False
         self.folder = r["folder"]
         self.refresh()
-        self._notify(self.t("folder_copied", n=folder, to=r["folder"], copied=r["copied"]))
+        self._notify(self.t("folder_copied", n=folder, to=r["folder"], copied=r["copied"]) + self._favs_text(r["favorites"]))
+        self._favs_left(r["favorites"])
         return True
+
+    def _favs_text(self, favs: Dict[str, object]) -> str:
+        """' Ook 2 favorieten gingen mee (bank 3).' after a folder copy, or nothing."""
+        n, banks = favs["carried"], favs["banks"]
+        if not n:
+            return ""
+        return " " + self.t("favs_carried" + ("_one" if n == 1 else ""), n=n,
+                            banks=", ".join(str(b) for b in banks))
+
+    def _favs_left(self, favs: Dict[str, object]) -> None:
+        """Favourites that could not come along are said in a window of their own (not only in the
+        toast that disappears): nothing on the card was overwritten, the player can place them."""
+        n = favs["left"]
+        if n:
+            self.view.ask(self.t("favs_left" + ("_one" if n == 1 else ""), n=n), [self.t("btn_got_it")])
 
     def copy_library_folders(self, card: str, folders: Sequence[int], start: Optional[int] = None) -> bool:
         """Copy several whole folders of a library card onto the open card at once, in one undo step:
@@ -1174,11 +1310,13 @@ class MainPresenter(SongDetails):
         self.refresh()
         if hasattr(self.view, "select_folders"):
             self.view.select_folders([x["folder"] for x in r])
+        favs = r[0]["favorites"]
         if len(r) == 1:
-            self._notify(self.t("folder_copied", n=r[0]["from"], to=r[0]["folder"], copied=r[0]["copied"]))
+            self._notify(self.t("folder_copied", n=r[0]["from"], to=r[0]["folder"], copied=r[0]["copied"]) + self._favs_text(favs))
         else:
             self._notify(self.t("folders_copied", n=len(r), songs=sum(x["copied"] for x in r),
-                                to=", ".join(str(x["folder"]) for x in r)))
+                                to=", ".join(str(x["folder"]) for x in r)) + self._favs_text(favs))
+        self._favs_left(favs)
         return True
 
     def _free_text(self, storage, free: int) -> str:
@@ -1369,10 +1507,23 @@ class MainPresenter(SongDetails):
         s = self.session
         if s is None:
             return []
+        was = s.renamed_songs()
         if self.query:
-            return [SongRow(v.folder, v.song, v.name, " ".join(v.types), True) for v in s.search(self.query)]
-        return [SongRow(self.folder, si + 1, x.name if x.used else "", " ".join(x.extensions), x.used)
+            return [SongRow(v.folder, v.song, v.name, " ".join(v.types), True, was.get((v.folder, v.song), ""))
+                    for v in s.search(self.query)]
+        return [SongRow(self.folder, si + 1, x.name if x.used else "", " ".join(x.extensions), x.used,
+                        was.get((self.folder, si + 1), "") if x.used else "")
                 for si, x in enumerate(s.db.folders[self.folder - 1].songs)]
+
+    def old_name(self, slot: Tuple[int, int]) -> str:
+        """What the song was called before it was renamed (not on the card yet), or ""."""
+        s = self.session
+        return s.renamed_songs().get(tuple(slot), "") if s is not None else ""
+
+    def restore_old_name(self, slot: Tuple[int, int]) -> bool:
+        """Give one renamed song its old name back, as a step of its own (Ongedaan maken undoes it)."""
+        old = self.old_name(slot)
+        return bool(old) and self.rename_song(slot[0], slot[1], old)
 
     # -------------------------------------------------------------- opening and navigation
     def open_card(self, path: str) -> bool:

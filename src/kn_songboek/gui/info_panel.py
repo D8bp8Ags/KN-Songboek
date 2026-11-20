@@ -27,8 +27,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import i18n, style
-from .widgets import GripSplitter, _chip_height, name_field  # noqa: F401
+from . import i18n, icons, style
+from .widgets import GripSplitter, _chip_height, gap, name_field  # noqa: F401
 
 if TYPE_CHECKING:
     from .qt_app import MainWindow
@@ -112,6 +112,7 @@ class InfoPanel(QFrame):
         self.title.setFont(f)
         self.title.setWordWrap(True)
         self.lay.addWidget(self.title)
+        self._build_renamed(body)
         self.grid = QLabel(body)
         self.grid.setWordWrap(True)
         self.grid.setTextFormat(Qt.RichText)
@@ -249,6 +250,52 @@ class InfoPanel(QFrame):
         self.bank_list = _BankList(parent, self._open_memory)
         cv.addWidget(self.bank_list)
 
+    def _build_renamed(self, parent) -> None:
+        """A renamed song (not on the card yet): what it was called, and a button that puts that back."""
+        box = QFrame(parent)
+        box.setObjectName("renamed")
+        v = QVBoxLayout(box)
+        v.setContentsMargins(style.px(10), style.px(8), style.px(10), style.px(8))
+        v.setSpacing(2)
+        self.renamed_head = QLabel(box)
+        f = self.renamed_head.font()
+        f.setBold(True)
+        self.renamed_head.setFont(f)
+        self.renamed_before = QLabel(box)
+        self.renamed_old = QLabel(box)
+        self.renamed_old.setFont(self.title.font())
+        self.renamed_old.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.renamed_button = QPushButton(box)
+        self.renamed_button.clicked.connect(self._restore_name)
+        for w in (self.renamed_head, self.renamed_before, self.renamed_old):
+            v.addWidget(w)
+        row = QHBoxLayout()
+        row.setContentsMargins(0, style.px(4), 0, 0)
+        row.addWidget(self.renamed_button)
+        row.addStretch(1)
+        v.addLayout(row)
+        box.hide()
+        self.renamed = box
+        self.lay.addWidget(box)
+
+    def _show_renamed(self, slot) -> None:
+        p = self.win.presenter
+        old = p.old_name(slot) if slot is not None and hasattr(p, "old_name") else ""
+        if old:
+            t = p.t
+            self.renamed_head.setText(t("renamed_head"))
+            self.renamed_before.setText(t("renamed_before"))
+            self.renamed_old.setText(old)
+            self.renamed_button.setText(gap(t("btn_restore_name")))
+            self.renamed_button.setIcon(icons.icon("undo"))
+        self.renamed.setVisible(bool(old))
+        if old:
+            QTimer.singleShot(0, self._fit_width)          # the panel is never narrower than the button
+
+    def _restore_name(self) -> None:
+        if self.slot is not None:
+            self.win.presenter.restore_old_name(self.slot)
+
     def _size_buttons(self) -> None:
         """Two lines of text (number and name) plus room for padding and border. A fixed height, because
         the macOS style reports a one-line height for a button and the rows then overlap."""
@@ -273,6 +320,7 @@ class InfoPanel(QFrame):
         self.slot = slot if info is not None else None
         self.data = None
         self._hide_sections()
+        self._show_renamed(self.slot)
         if info is None:
             self.title.setText("")
             self.grid.setText("<span style='color:gray'>%s</span>" % escape(t("info_none")))

@@ -33,6 +33,7 @@ from PySide6.QtGui import (
     QActionGroup,
     QColor,
     QFont,
+    QFontMetrics,
     QFontMetricsF,
     QImage,
     QKeySequence,
@@ -715,7 +716,7 @@ class MainWindow(QMainWindow):
             return False
         return poll
 
-    def ask(self, text: str, buttons: List[str]) -> Optional[int]:
+    def ask(self, text: str, buttons: List[str], cancel: str = "") -> Optional[int]:
         if self.flow is not None:
             poll = self._card_poll(text)
             if poll:
@@ -728,9 +729,9 @@ class MainWindow(QMainWindow):
         box.setWindowTitle(APP_NAME)
         box.setText(text)
         made = [box.addButton(b, QMessageBox.AcceptRole) for b in buttons]
-        cancel = box.addButton(self.presenter.t("btn_cancel"), QMessageBox.RejectRole)
+        no = box.addButton(cancel or self.presenter.t("btn_cancel"), QMessageBox.RejectRole)
         box.setDefaultButton(made[0])
-        box.setEscapeButton(cancel)
+        box.setEscapeButton(no)
         box.exec()
         clicked = box.clickedButton()
         return made.index(clicked) if clicked in made else None
@@ -1213,6 +1214,9 @@ class MainWindow(QMainWindow):
         self.empty_hint.setText(t(key))
         self.songs.setHorizontalHeaderLabels([t("col.folder"), t("col.song"), t("col.name"), t("col.types")])
         self.songs.setColumnHidden(0, not search_mode)
+        small = QFontMetrics(EmptySlotDelegate.was_font(self.songs.font()))
+        self.songs.was_width = max([small.horizontalAdvance(t("renamed_was", old=r.old_name)) + style.px(10)
+                                    for r in rows if r.old_name] or [0])
         self.songs.fit_name()
         shown = (self.presenter.session, self.presenter.folder, search_mode and self.presenter.query)
         if shown != getattr(self, "_songs_shown", None):    # another folder: what was chosen in the last one
@@ -1230,6 +1234,11 @@ class MainWindow(QMainWindow):
                         flags |= Qt.ItemIsEditable
                 else:
                     it.setForeground(style.colour("muted"))
+                if r.old_name and c == 2:                    # renamed, not on the card yet: yellow like the bar,
+                    it.setBackground(style.colour("draft_bg"))   # the old name painted behind the new one
+                    it.setForeground(style.colour("draft_text"))
+                    it.setData(EmptySlotDelegate.WAS_ROLE, t("renamed_was", old=r.old_name))
+                    it.setToolTip(t("renamed_tip", old=r.old_name))
                 it.setFlags(flags)
                 it.setData(Qt.UserRole, (r.folder, r.song))
                 self.songs.setItem(i, c, it)
@@ -1652,6 +1661,7 @@ class MainWindow(QMainWindow):
         if s and (s.dirty or self.presenter.composing) and not self.confirm(self.presenter.t("confirm_quit")):
             ev.ignore()
             return
+        self.presenter.forget_draft()                   # quitting on purpose: nothing to bring back next time
         self._keep_layout()
         ev.accept()
 
@@ -1824,6 +1834,8 @@ def main(argv=None) -> int:
     if len(argv) > 1:                   # a card given on the command line: open it straight away
         w.open_path(argv[1])
     w.show()
+    # changes left behind when the app stopped unexpectedly last time (core/recovery.py)
+    QTimer.singleShot(0, w.presenter.offer_drafts)
     return app.exec()
 
 

@@ -176,6 +176,12 @@ TEXTS = {
                         "Do not change anything on the card. Is this card already in the library? Then you can put its songs on "
                         "another card with Put together a new card. Otherwise: ask someone for help.\n\n"
                         "If you ask someone for help, show them this: {card}: {detail}"),
+    "err.draft_card_changed": ("Dit is niet dezelfde kaart, of de kaart is intussen veranderd.",
+                               "This is not the same card, or the card was changed since."),
+    "err.draft_library_changed": ("{n} songbestand(en) uit de bibliotheek zijn intussen veranderd of weg, bijvoorbeeld {first}",
+                                  "{n} song file(s) from the library were changed or removed since, e.g. {first}"),
+    "err.draft_damaged": ("De bewaarde wijzigingen zijn beschadigd en kunnen niet worden gelezen.",
+                          "The kept changes are damaged and cannot be read."),
     "err.locked": ("{card} is schrijfbeveiligd. Haal de kaart eruit, schuif het schuifje aan de zijkant omhoog (weg van LOCK) en doe hem terug.", "{card} is write-protected. Take the card out, slide the switch on its side up (away from LOCK) and put it back."),
     "err.no_space": ("Niet genoeg ruimte op {card}: {need} KB nodig, {free} KB vrij.", "Not enough space on {card}: {need} KB needed, {free} KB free."),
     "err.verify_failed": ("Na het opslaan zijn {n} bestand(en) op de kaart niet zoals ze moeten zijn ({paths}). Zet de kaart niet in het keyboard: de back-up van vlak voor het opslaan heeft de oude kaart nog.",
@@ -553,6 +559,26 @@ TEXTS = {
     "lib_all_songs": ("Alle songs", "All songs"),
     "lib_list_n": ("Songlijst {n} ({count} songs)", "Song list {n} ({count} songs)"),
     "lib_folder_n": ("{n:02d}  {name}  ({count})", "{n:02d}  {name}  ({count})"),
+    "favs_carried_one": ("De favoriet ging mee (favorietenbank {banks}).",
+                         "Its favourite came along (favourite bank {banks})."),
+    "favs_carried": ("Ook {n} favorieten gingen mee (favorietenbank {banks}).",
+                     "{n} favourites came along too (favourite bank {banks})."),
+    "favs_left_one": ("De songs staan op je kaart. Eén favoriet kon niet mee: er was geen plek meer "
+                      "in je favorietenbanken. Er is niets van je eigen favorieten overschreven.\n\n"
+                      "Wil je hem toch? Kijk bij Meer… › Favorieten en songlijsten. Daar kun je een "
+                      "knop vrijmaken en de song erop zetten.",
+                      "The songs are on your card. One favourite could not come along: there was no room "
+                      "left in your favourite banks. None of your own favourites was overwritten.\n\n"
+                      "Want it anyway? Look in More… › Favourites and song lists. There you can free a "
+                      "button and put the song on it."),
+    "favs_left": ("De songs staan op je kaart. {n} favorieten konden niet mee: er was geen plek meer "
+                  "in je favorietenbanken. Er is niets van je eigen favorieten overschreven.\n\n"
+                  "Wil je ze toch? Kijk bij Meer… › Favorieten en songlijsten. Daar kun je knoppen "
+                  "vrijmaken en de songs erop zetten.",
+                  "The songs are on your card. {n} favourites could not come along: there was no room "
+                  "left in your favourite banks. None of your own favourites was overwritten.\n\n"
+                  "Want them anyway? Look in More… › Favourites and song lists. There you can free "
+                  "buttons and put the songs on them."),
     "folder_copied": ("Map {n} gekopieerd naar map {to}: {copied} song(s)", "Folder {n} copied to folder {to}: {copied} song(s)"),
     "btn_copy_folder": ("Hele map {part} toevoegen aan je kaart", "Add the whole folder {part} to your card"),
     "btn_copy_list": ("Hele {part} toevoegen aan je kaart", "Add the whole {part} to your card"),
@@ -722,6 +748,30 @@ TEXTS = {
                              "{name} does not look like an empty card: it holds other files. Put the new card on it anyway? (Those files stay.)"),
     "leave_unsaved": ("Je hebt {n} wijziging(en) die nog niet op de kaart staan. Wat wil je ermee doen?\n\nWeggooien laat de kaart zoals hij was.",
                       "You have {n} change(s) that are not on the card yet. What do you want to do with them?\n\nThrowing them away leaves the card as it was."),
+    # crash recovery (core/recovery.py): a draft left behind by a session that stopped unexpectedly
+    "draft_found": ("KN Songboek is de vorige keer onverwacht gestopt. Er waren toen nog wijzigingen die niet op de kaart stonden:\n\n{what}\n\nWil je verdergaan waar je gebleven was?",
+                    "KN Songboek stopped unexpectedly last time. There were changes that were not on the card yet:\n\n{what}\n\nDo you want to carry on where you left off?"),
+    "draft_what_card": ("{n} wijzigingen aan de kaart {name} (laatste wijziging: {when})",
+                        "{n} changes to the card {name} (last change: {when})"),
+    "draft_what_card_1": ("1 wijziging aan de kaart {name} (laatste wijziging: {when})",
+                          "1 change to the card {name} (last change: {when})"),
+    "draft_what_new": ("Een nieuwe kaart met {n} songs (laatste wijziging: {when})",
+                       "A new card with {n} songs (last change: {when})"),
+    "draft_what_new_1": ("Een nieuwe kaart met 1 song (laatste wijziging: {when})",
+                         "A new card with 1 song (last change: {when})"),
+    "btn_draft_back": ("Ja, verdergaan", "Yes, carry on"),
+    "btn_draft_discard": ("Nee, weggooien", "No, throw away"),
+    "btn_draft_later": ("Later beslissen", "Decide later"),
+    "confirm_draft_discard": ("Weet je het zeker? Die wijzigingen zijn dan echt weg. De kaart zelf blijft zoals hij was.",
+                              "Are you sure? Those changes are then gone for good. The card itself stays as it was."),
+    "draft_need_card": ("Doe eerst de SD-kaart {name} in de computer en klik dan op Opnieuw proberen.",
+                        "First put the SD card {name} in the computer, then click Try again."),
+    "draft_not_back": ("De wijzigingen kunnen niet terug:\n{why}\n\nZit de goede kaart in de computer? Doe hem erin en klik op Opnieuw proberen. Of gooi de wijzigingen weg.",
+                       "The changes cannot come back:\n{why}\n\nIs the right card in the computer? Put it in and click Try again. Or throw the changes away."),
+    "draft_back": ("Je wijzigingen zijn terug. Ze staan nog niet op de kaart: klik op Op kaart zetten als je klaar bent.",
+                   "Your changes are back. They are not on the card yet: click Put on card when you are done."),
+    "draft_kept": ("Goed. Bij de volgende keer opstarten vraagt het programma het opnieuw.",
+                   "All right. The next time it starts, the program asks again."),
     "compose_empty": ("Sleep eerst songs uit de bibliotheek naar de nieuwe kaart.", "Drag songs from the library onto the new card first."),
     "fullness": ("Op de nieuwe kaart: {n} songs, {size}", "On the new card: {n} songs, {size}"),
     "fullness_1": ("Op de nieuwe kaart: 1 song, {size}", "On the new card: 1 song, {size}"),
@@ -873,6 +923,12 @@ TEXTS = {
     "btn_move": ("Verplaatsen naar…", "Move to…"),
     "btn_copy": ("Kopiëren naar…", "Copy to…"),
     "btn_rename": ("Andere naam", "Rename"),
+    "renamed_was": ("(was: {old})", "(was: {old})"),
+    "renamed_tip": ("Naam veranderd, nog niet op de kaart.\nEerst heette deze song: {old}",
+                    "Name changed, not on the card yet.\nThis song used to be called: {old}"),
+    "renamed_head": ("✎ Naam veranderd", "✎ Name changed"),
+    "renamed_before": ("Eerst heette deze song:", "This song used to be called:"),
+    "btn_restore_name": ("Oude naam terugzetten", "Put the old name back"),
     "btn_delete": ("Weghalen", "Remove"),
     "selected_n": ("{n} gekozen:", "{n} selected:"),
     "step_card": ("Welke kaart", "Which card"),

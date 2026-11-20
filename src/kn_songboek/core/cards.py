@@ -259,7 +259,7 @@ def new_card_from(source: CardSession) -> CardSession:
     s = new_card()
     for fi, fo in enumerate(source.db.folders):
         if any(x.used for x in fo.songs):
-            s.import_folder(source, fi + 1, fi + 1)
+            s.import_folder(source, fi + 1, fi + 1, favorites=False)    # all banks follow below, as they are
         elif fo.name:
             s.rename_folder(fi + 1, fo.name)
     for n in range(3):

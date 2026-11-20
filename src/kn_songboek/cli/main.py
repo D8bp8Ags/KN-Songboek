@@ -464,7 +464,11 @@ def _library_copy_part(args, lib):
     s = _open(args)
     if args.libcmd == "copy-folder":
         r = s.import_folder(card.session, int(n), args.to_folder)
-        return _finish(args, s, "folder %s copied to folder %d (%d songs)" % (n, r["folder"], r["copied"]))
+        fv = r["favorites"]
+        extra = "; %d favourite(s) to bank %s" % (fv["carried"], ",".join(map(str, fv["banks"]))) if fv["carried"] else ""
+        if fv["left"]:
+            extra += "; %d favourite(s) left behind: no free favourite bank" % fv["left"]
+        return _finish(args, s, "folder %s copied to folder %d (%d songs%s)" % (n, r["folder"], r["copied"], extra))
     r = s.import_song_list(card.session, int(n), args.to_list, args.to_folder, None, args.reuse)
     return _finish(args, s, "song list %s copied to song list %d (folder %s; %d copied, %d reused)"
                    % (n, r["list"], r["folder"], r["copied"], r["reused"]))

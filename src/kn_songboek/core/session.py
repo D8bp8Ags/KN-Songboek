@@ -31,6 +31,7 @@ class FileOp:
     src: str
     dst: str = ""
     src_storage: Optional[Storage] = None   # for 'import': another card or a folder
+    name: str = ""                    # for 'import': the song's name when it came in (to see a rename)
 
     def __str__(self) -> str:
         return "%s %s%s" % (self.kind, self.src, " -> " + self.dst if self.dst else "")
@@ -89,6 +90,9 @@ class PlannedStorage:
 
     def __getattr__(self, name):
         return getattr(self.base, name)
+
+
+_NO_FAVS: Dict[str, object] = {"carried": 0, "banks": [], "left": 0}
 
 
 def _idx(folder: int, song: Optional[int] = None) -> Tuple[int, Optional[int]]:
@@ -154,6 +158,38 @@ class CardSession:
             songs = [self._song_view(fi, si, s) for si, s in enumerate(f.songs) if s.used]
             if songs or f.name or include_empty:
                 out.append(FolderView(fi + 1, f.name, songs))
+        return out
+
+    def renamed_songs(self) -> Dict[Tuple[int, int], str]:
+        """(folder, song) -> the name the song had before, for every song whose name was changed since the
+        card was opened or last saved. The song is followed through the pending file operations, so a
+        song that was renamed and then moved still says what it was called. A song brought in from
+        elsewhere compares with the name it came in with; a song changed back is not listed."""
+        base = MusicDatabase.from_bytes(self._undo[0][0]) if self._undo else self.db
+        was = {}                                         # card path at the last save -> name then
+        for fi, si, x in base.iter_songs():
+            for p in layout.song_paths(fi, si, x).values():
+                was[p.upper()] = x.name
+        origin: Dict[str, Optional[str]] = {}            # path now -> the name it started with
+        for op in self.pending:
+            src = op.src.upper()
+            if op.kind == "import":
+                origin[op.dst.upper()] = op.name or None
+            elif op.kind in ("move", "copy"):
+                origin[op.dst.upper()] = origin[src] if src in origin else was.get(src)
+                if op.kind == "move":
+                    origin[src] = None
+            elif op.kind == "delete":
+                origin[src] = None
+        out = {}
+        for fi, si, x in self.db.iter_songs():
+            paths = list(layout.song_paths(fi, si, x).values())
+            if not paths:
+                continue
+            p = paths[0].upper()
+            old = origin[p] if p in origin else was.get(p)
+            if old is not None and old != x.name:
+                out[(fi + 1, si + 1)] = old
         return out
 
     def song(self, folder: int, song: int) -> SongView:
@@ -660,7 +696,8 @@ class CardSession:
             mask |= 1 << FILE_TYPES.index(ext.upper().strip(". "))
         entry = Song(name[:16], layout.default_base(dfi), mask)
         for ext, p in files.items():
-            self.pending.append(FileOp("import", p, layout.song_path(dfi, dsi, entry, ext.upper().strip(". ")), source))
+            self.pending.append(FileOp("import", p, layout.song_path(dfi, dsi, entry, ext.upper().strip(". ")),
+                                       source, entry.name))
         self.db.folders[dfi].songs[dsi] = entry
 
     def import_song_list(self, source: "CardSession", list_no: int, to_list: Optional[int] = None,
@@ -811,9 +848,11 @@ class CardSession:
                 items.append(p)
             self.db.set_playlist(n, items)
 
-    def import_folder(self, source: "CardSession", folder: int, to_folder: Optional[int] = None) -> Dict[str, object]:
+    def import_folder(self, source: "CardSession", folder: int, to_folder: Optional[int] = None,
+                      favorites: bool = True) -> Dict[str, object]:
         """Copy a whole folder of another card (songs on the same places, and its name) into an empty
-        folder of this card (default: the first empty one), as one undo step."""
+        folder of this card (default: the first empty one), as one undo step. Its songs' favourite
+        buttons come along where there is room (see _carry_favorites; result key "favorites")."""
         sfi, songs = self._source_folder(source, folder)
         if to_folder is None:
             dfi = next(iter(self._empty_folders()), None)
@@ -825,13 +864,15 @@ class CardSession:
                 raise SlotError(Text("folder_not_empty", "folder {n} is not empty", n=dfi + 1))
         self._begin(Text("copy_folder", "copy folder {folder} -> {to}", folder=folder, to=dfi + 1))
         name = self._copy_folder_in(source, sfi, songs, dfi)
+        favs = self._carry_favorites(source, {(sfi, si): (dfi, si) for si, _ in songs}) if favorites else dict(_NO_FAVS)
         self._changed("song")
-        return {"folder": dfi + 1, "copied": len(songs), "name": name}
+        return {"folder": dfi + 1, "copied": len(songs), "name": name, "favorites": favs}
 
     def import_folders(self, source: "CardSession", folders: List[int], start: Optional[int] = None) -> List[Dict[str, object]]:
         """Copy several whole folders of another card at once, as one undo step: each into an empty
         folder of this card, in their order. They fill the empty folders from `start` on (when that
-        one is empty), then the first empty ones. Nothing happens unless all of them fit."""
+        one is empty), then the first empty ones. Nothing happens unless all of them fit. Their
+        favourite buttons come along as with import_folder; every result carries the same "favorites"."""
         picked = [(f, *self._source_folder(source, f)) for f in dict.fromkeys(folders)]
         empty = self._empty_folders()
         if start is not None and _idx(start)[0] in empty:
@@ -843,12 +884,59 @@ class CardSession:
         if not picked:
             return []
         self._begin(Text("copy_folders", "copy {n} folders", n=len(picked)))
-        out = []
+        out, moved = [], {}
         for (folder, sfi, songs), dfi in zip(picked, empty):
             name = self._copy_folder_in(source, sfi, songs, dfi)
+            moved.update({(sfi, si): (dfi, si) for si, _ in songs})
             out.append({"from": folder, "folder": dfi + 1, "copied": len(songs), "name": name})
+        favs = self._carry_favorites(source, moved)
+        for x in out:
+            x["favorites"] = favs
         self._changed("song")
         return out
+
+    def _carry_favorites(self, source: "CardSession", moved: Dict[Tuple[int, int], Tuple[int, int]]) -> Dict[str, object]:
+        """Put the favourite buttons of copied songs on this card too. moved: 0-based slot on source ->
+        0-based slot here. A favourite button of this card is never overwritten.
+
+        The songs of one source bank stay together, on the same button numbers, in the first bank
+        here that has those buttons free and suits it: the same bank number (with the same name, or
+        still unused), another bank with the same name, or else an unused bank (no name, no buttons),
+        which then gets the source bank's name. When no bank suits, those favourites stay behind and
+        are counted in "left". Returns {"carried": n, "banks": [1-based banks here], "left": n}."""
+        carried, left, banks = 0, 0, []
+        for sb, src in enumerate(source.db.favorites):
+            group = {}
+            for pos, v in enumerate(src.items):
+                it = FavoriteBank.decode_item(v)
+                if it and it[0] == "song" and (it[1], it[2]) in moved:
+                    group[pos] = FavoriteBank.encode_song(*moved[(it[1], it[2])])
+            if not group:
+                continue
+
+            def free(b: FavoriteBank, group=group) -> bool:
+                return all(b.items[pos] == 0 for pos in group)
+
+            def unused(b: FavoriteBank) -> bool:
+                return not b.name and not any(b.items)
+            mine = self.db.favorites
+            here = mine[sb] if sb < len(mine) and free(mine[sb]) and (mine[sb].name == src.name or unused(mine[sb])) else None
+            if here is None and src.name:
+                here = next((b for b in mine if b.name == src.name and free(b)), None)
+            if here is None:
+                here = next((b for b in mine if unused(b)), None)
+            if here is None:
+                left += len(group)
+                continue
+            for pos, v in group.items():
+                here.items[pos] = v
+            if not here.name:
+                here.name = src.name
+            carried += len(group)
+            n = mine.index(here) + 1
+            if n not in banks:
+                banks.append(n)
+        return {"carried": carried, "banks": sorted(banks), "left": left}
 
     def _empty_folders(self) -> List[int]:
         """0-based numbers of the folders without a name and without songs."""

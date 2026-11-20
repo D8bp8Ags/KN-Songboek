@@ -164,6 +164,10 @@ Na elke wijziging staat onderin even een balkje, bijvoorbeeld "1 song verplaatst
 
 Staat een song ook in een favoriet of een songlijst? Dan gaat die gewoon mee als je de song verplaatst.
 
+Heb je een song een andere naam gegeven? Dan is de naam geel, met de oude naam erachter, bijvoorbeeld
+"HET IS FEEST (was: FEEST)". Klik je op de song, dan staat de oude naam ook rechts. Met **Oude naam
+terugzetten** krijgt alleen die song zijn oude naam terug. Staat alles op de kaart, dan is het geel weer weg.
+
 ## 4. Mappen ordenen
 
 Je kunt een hele map verslepen naar een andere plaats in de lijst.
@@ -222,6 +226,23 @@ halen en terug in het keyboard doen.
 
 Klik je op **Begin**, of sluit je het programma terwijl er nog wijzigingen zijn? Dan vraagt het programma of
 je ze eerst op de kaart wilt zetten, of wilt weggooien.
+
+### Stopte het programma onverwacht?
+
+Stopt het programma terwijl er nog wijzigingen zijn die niet op de kaart staan? Bijvoorbeeld door een
+storing, of doordat de computer opnieuw opstartte? Dan zijn je wijzigingen niet weg. Het programma bewaart ze
+na elke wijziging op de computer (niet op de kaart).
+
+De volgende keer dat je het programma start, vraagt het of je wilt **verdergaan waar je gebleven was**.
+
+- **Ja, verdergaan**: je wijzigingen staan weer klaar, met de gele balk. Ook Ongedaan maken werkt weer.
+  Ging het om een SD-kaart? Doe dan dezelfde kaart in de computer. Het programma vraagt erom als hij er nog
+  niet in zit.
+- **Nee, weggooien**: de wijzigingen zijn dan echt weg. De kaart blijft zoals hij was.
+- **Later beslissen**: er verandert niets. Bij de volgende keer starten vraagt het programma het opnieuw.
+
+Is de kaart intussen veranderd, of zit er een andere kaart in? Dan zegt het programma dat de wijzigingen er
+niet meer op passen. Je kunt dan de goede kaart erin doen, of de wijzigingen weggooien.
 
 ### Als er iets niet klopt
 
@@ -358,6 +379,11 @@ Meer mappen tegelijk overnemen? Houd **Cmd** ingedrukt en klik op de mappen. De 
 **2 hele mappen toevoegen aan je kaart** (of 3, 4 …). Je kunt de mappen ook samen naar de lijst rechts slepen.
 Laat je ze los op een lege map, dan beginnen ze daar. Elke map komt in een eigen lege map, met zijn naam en
 al zijn songs.
+
+De **favorieten** van die songs gaan mee: op hetzelfde knopnummer, in dezelfde favorietenbank als dat kan.
+Is die bank op je kaart al van jou (een andere naam, of de knop is bezet)? Dan komen ze in een lege bank,
+met de naam van de oude bank. Je eigen favorieten worden nooit overschreven. Is er geen lege bank meer,
+dan zegt het programma hoeveel favorieten niet mee konden. De songs zelf staan dan wel op je kaart.
 
 Heb je nog geen kaarten bewaard? Dan staat er links alleen een knop **Kaart of diskette bewaren in de
 bibliotheek**.

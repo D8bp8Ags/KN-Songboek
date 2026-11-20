@@ -166,6 +166,10 @@ to it is **Undo**, in case that was not what you meant.
 
 Is a song also in a favourite or a song list? Then that simply moves along when you move the song.
 
+Did you give a song another name? Then the name is yellow, with the old name behind it, for example
+"HET IS FEEST (was: FEEST)". Click the song and the old name is also shown on the right. **Put the old name
+back** gives only that song its old name back. Once everything is on the card, the yellow is gone again.
+
 ## 4. Arranging folders
 
 You can drag a whole folder to another place in the list.
@@ -222,6 +226,22 @@ back in the keyboard.
 
 If you click **Start**, or close the program while there are still changes, the program asks whether you want to
 put them on the card first, or throw them away.
+
+### Did the program stop unexpectedly?
+
+Did the program stop while there were changes that are not on the card yet? For example because of a fault,
+or because the computer restarted? Then your changes are not lost. The program keeps them on the computer
+(not on the card) after every change.
+
+The next time you start the program, it asks whether you want to **carry on where you left off**.
+
+- **Yes, carry on**: your changes are ready again, with the yellow bar. Undo works again too. Was it an SD
+  card? Then put the same card in the computer. The program asks for it if it is not in yet.
+- **No, throw away**: the changes are then gone for good. The card stays as it was.
+- **Decide later**: nothing changes. The next time it starts, the program asks again.
+
+Was the card changed in the meantime, or is another card in? Then the program says the changes no longer fit
+it. You can put the right card in, or throw the changes away.
 
 ### If something is not right
 
@@ -353,6 +373,11 @@ Take over several folders at once? Hold **Cmd** and click the folders. The butto
 **Add 2 whole folders to your card** (or 3, 4 …). You can also drag the folders together to the list on the
 right. If you let go on an empty folder, they start there. Each folder goes into an empty folder of its own,
 with its name and all its songs.
+
+The **favourites** of those songs come along: on the same button number, in the same favourite bank if
+possible. Is that bank on your card already yours (another name, or the button is taken)? Then they go into an
+empty bank, with the old bank's name. Your own favourites are never overwritten. If there is no empty bank
+left, the program says how many favourites could not come along. The songs themselves are on your card.
 
 Have you not kept any cards yet? Then on the left there is only a button **Keep a card or diskette in the
 library**.

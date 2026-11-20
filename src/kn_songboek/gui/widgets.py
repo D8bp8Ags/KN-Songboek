@@ -23,8 +23,10 @@ from PySide6.QtGui import (
     QBrush,
     QColor,
     QDrag,
+    QFont,
     QPainter,
     QPainterPath,
+    QPalette,
     QPixmap,
     QRegularExpressionValidator,
 )
@@ -817,9 +819,12 @@ class EmptySlotDelegate(QStyledItemDelegate):
             name_field(editor)
         return editor
 
+    WAS_ROLE = Qt.UserRole + 1                  # "(was: OLD NAME)" after a renamed song's name
+
     def paint(self, painter, option, index):
         super().paint(painter, option, index)
         if index.flags() & Qt.ItemIsDragEnabled:
+            self._paint_was(painter, option, index)
             return
         from PySide6.QtGui import QPen
         painter.save()
@@ -829,6 +834,39 @@ class EmptySlotDelegate(QStyledItemDelegate):
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         painter.drawRoundedRect(option.rect.adjusted(4, 6, -6, -6), 4, 4)
+        painter.restore()
+
+    @staticmethod
+    def was_font(font):
+        """The smaller font of "(was: …)"."""
+        f = QFont(font)
+        f.setPointSizeF(f.pointSizeF() * 0.85 if f.pointSizeF() > 0 else 10)
+        return f
+
+    def _paint_was(self, painter, option, index) -> None:
+        """A renamed song: its old name small and grey right after the new one, "HET IS FEEST (was: FEEST)".
+        Painted, not part of the text, so editing the name and sorting see only the name itself."""
+        was = index.data(self.WAS_ROLE)
+        if not was:
+            return
+        from PySide6.QtGui import QFontMetrics
+        from PySide6.QtWidgets import QApplication, QStyle, QStyleOptionViewItem
+        opt = QStyleOptionViewItem(option)
+        self.initStyleOption(opt, index)
+        widget = opt.widget
+        st = widget.style() if widget is not None else QApplication.style()
+        rect = st.subElementRect(QStyle.SE_ItemViewItemText, opt, widget)
+        x = rect.left() + QFontMetrics(opt.font).horizontalAdvance(opt.text) + style.px(10)
+        if x >= rect.right():
+            return
+        font = self.was_font(opt.font)
+        fm = QFontMetrics(font)
+        painter.save()
+        painter.setFont(font)
+        selected = bool(opt.state & QStyle.State_Selected)
+        painter.setPen(opt.palette.color(QPalette.HighlightedText) if selected else style.colour("muted"))
+        r = rect.adjusted(x - rect.left(), 0, 0, 0)
+        painter.drawText(r, Qt.AlignVCenter | Qt.AlignLeft, fm.elidedText(was, Qt.ElideRight, r.width()))
         painter.restore()
 
 
@@ -850,6 +888,7 @@ class SongTable(QTableWidget):
         fm = self.fontMetrics()
         self.name_width = max(fm.horizontalAdvance("Zomeravond 12345"), fm.averageCharWidth() * NAME_LEN) + 30
         self.name_want = self.name_width                 # what the user (or the default) wants for Naam
+        self.was_width = 0                               # room for "(was: OLD NAME)" while a song is renamed
         self._fitting = False
         user_columns(self, {2: self.name_width})
         self.horizontalHeader().sectionResized.connect(self._resized)
@@ -876,7 +915,7 @@ class SongTable(QTableWidget):
         last = cols[-1]
         others = sum(h.sectionSize(c) for c in cols if c not in (2, last))
         room = self.viewport().width() - others - (h.minimumSectionSize() if last != 2 else 0)
-        width = max(min(self.name_want, room), h.minimumSectionSize())
+        width = max(min(max(self.name_want, self.name_width + self.was_width), room), h.minimumSectionSize())
         if h.sectionSize(2) != width:
             self._fitting = True
             try:

@@ -66,7 +66,8 @@ class SongListCopyTests(unittest.TestCase):
         self.src.rename_folder(2, "ZATERDAG")
         _, dst = card([(1, "X", b"x")])
         r = dst.import_folder(self.src, 2)
-        self.assertEqual(r, {"folder": 2, "copied": 2, "name": "ZATERDAG"})
+        self.assertEqual(r, {"folder": 2, "copied": 2, "name": "ZATERDAG",
+                             "favorites": {"carried": 0, "banks": [], "left": 0}})
         self.assertEqual([(x.song, x.name) for x in dst.folders()[1].songs], [(1, "A"), (2, "B")])
         self.assertEqual(dst.db.folders[1].name, "ZATERDAG")
         self.assertEqual(len(dst.history()), 1)
